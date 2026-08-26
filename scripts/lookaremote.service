@@ -1,0 +1,21 @@
+[Unit]
+Description=LookARemote Host Daemon — Ultra-Low Latency Smartphone Remote Controller
+Documentation=https://github.com/lookaremote/lookaremote
+After=network.target graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/lookaremote-host-daemon --port 8765
+Restart=on-failure
+RestartSec=3s
+KillMode=process
+
+# Sandboxing & Security hardening
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=%h/.config/lookaremote /tmp
+PrivateTmp=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=default.target

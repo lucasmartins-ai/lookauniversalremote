@@ -1,0 +1,61 @@
+name: CI — Cross-Platform Test & Lint Matrix
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+
+jobs:
+  test-and-lint:
+    name: Test & Lint (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node-version: [20.x]
+        rust-toolchain: [stable]
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ matrix.rust-toolchain }}
+          components: clippy, rustfmt
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install Linux Build Dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libudev-dev
+
+      - name: Run Cargo Check & Benchmarks Verification
+        run: cargo check --benches --workspace
+
+      - name: Run Cargo Test Suite
+        run: cargo test --workspace --verbose
+
+      - name: Run Cargo Clippy (Strict)
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: Install NPM Dependencies
+        run: npm ci
+
+      - name: Run Frontend & Protocol Vitest Tests
+        run: npm test
+
+      - name: Run TypeScript Type Check & Build
+        run: npm run build --workspaces --if-present

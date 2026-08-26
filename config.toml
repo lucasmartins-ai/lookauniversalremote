@@ -1,0 +1,26 @@
+[daemon]
+poll_interval_ms = 500
+debounce_ms = 300
+default_mode = "Trackpad"
+
+[[profiles]]
+name = "Steam Big Picture & Games"
+mode = "Gamepad"
+process_names = ["steam", "steamwebhelper", "retroarch", "dolphin-emu", "heroic"]
+window_title_regex = "(?i)(steam|game|retroarch|dolphin|epic games)"
+
+[[profiles]]
+name = "Media Consumption"
+mode = "MediaRemote"
+process_names = ["spotify", "vlc", "mpv", "plex", "kodi"]
+window_title_regex = "(?i)(spotify|vlc|youtube|netflix|prime video)"
+
+[[profiles]]
+name = "Productivity & Development"
+mode = "Keyboard"
+process_names = ["code", "cursor", "nvim", "terminal", "iterm2", "alacritty", "discord"]
+
+[[profiles]]
+name = "General Desktop"
+mode = "Trackpad"
+process_names = ["*"]

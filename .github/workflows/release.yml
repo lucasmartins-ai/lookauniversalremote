@@ -1,0 +1,143 @@
+name: Release — Multi-Platform Packaging & Distribution
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v0.1.0)'
+        required: true
+        default: 'v0.1.0'
+
+permissions:
+  contents: write
+
+jobs:
+  build-host-daemon:
+    name: Build Host (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact_name: lookaremote-host-daemon-linux-x86_64
+            binary_name: lookaremote-host-daemon
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact_name: lookaremote-host-daemon-windows-x86_64
+            binary_name: lookaremote-host-daemon.exe
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            artifact_name: lookaremote-host-daemon-macos-arm64
+            binary_name: lookaremote-host-daemon
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install Linux Dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libudev-dev
+
+      - name: Build Host Daemon Release Binary
+        run: cargo build --release --target ${{ matrix.target }} --bin lookaremote-host-daemon
+
+      - name: Prepare Release Artifact (Linux / macOS)
+        if: runner.os != 'Windows'
+        run: |
+          mkdir -p release-stage
+          cp target/${{ matrix.target }}/release/${{ matrix.binary_name }} release-stage/
+          cp README.md LICENSE config.toml release-stage/ 2>/dev/null || true
+          if [ -d scripts ]; then cp -r scripts release-stage/; fi
+          cd release-stage
+          tar -czvf ../${{ matrix.artifact_name }}.tar.gz *
+          cd ..
+
+      - name: Prepare Release Artifact (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          mkdir -p release-stage
+          cp target/${{ matrix.target }}/release/${{ matrix.binary_name }} release-stage/
+          cp README.md config.toml release-stage/ 2>/dev/null || true
+          cd release-stage
+          7z a ../${{ matrix.artifact_name }}.zip *
+          cd ..
+
+      - name: Upload Host Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: |
+            ${{ matrix.artifact_name }}.tar.gz
+            ${{ matrix.artifact_name }}.zip
+
+  build-pwa-client:
+    name: Build PWA Web Client
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build PWA Client Bundle
+        run: npm run build --workspaces --if-present
+
+      - name: Package PWA Client Zip
+        run: |
+          cd apps/web-client/dist
+          zip -r ../../../lookaremote-pwa-web-client.zip .
+          cd ../../..
+
+      - name: Upload PWA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lookaremote-pwa-web-client
+          path: lookaremote-pwa-web-client.zip
+
+  publish-release:
+    name: Publish GitHub Release
+    needs: [build-host-daemon, build-pwa-client]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: Generate SHA256 Checksums
+        run: |
+          cd release-assets
+          sha256sum * > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: release-assets/*
+          generate_release_notes: true
+          draft: false
+          prerelease: false

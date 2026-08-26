@@ -1,0 +1,62 @@
+[package]
+name = "lookaremote-host-daemon"
+version = "0.1.0"
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "lookaremote-host-daemon"
+path = "src/main.rs"
+
+[lib]
+name = "lookaremote_host_daemon"
+path = "src/lib.rs"
+
+[dependencies]
+lookaremote-protocol = { path = "../../packages/protocol" }
+
+# Async runtime & Networking
+tokio = { version = "1.43", features = ["full"] }
+axum = { version = "0.8", features = ["ws"] }
+tower = { version = "0.5", features = ["util"] }
+tower-http = { version = "0.6", features = ["cors", "trace"] }
+webrtc = "0.12"
+futures-util = "0.3"
+bytes = "1.10"
+
+# Security & Cryptography
+x25519-dalek = { version = "2.0", features = ["static_secrets"] }
+rand = "0.8"
+sha2 = "0.10"
+hmac = "0.12"
+hex = "0.4"
+
+# CLI, QR & Logging
+clap = { version = "4.5", features = ["derive"] }
+qrcode = "0.14"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+toml = "0.8"
+regex = "1.11"
+
+# Error Handling
+thiserror = "2.0"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+input-linux = "0.7"
+evdev = "0.12"
+
+[target.'cfg(target_os = "windows")'.dependencies]
+vigem-client = "0.1"
+
+[dev-dependencies]
+tokio-tungstenite = "0.26"
+http-body-util = "0.1"
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "host_pipeline_bench"
+harness = false

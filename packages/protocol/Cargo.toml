@@ -1,0 +1,24 @@
+[package]
+name = "lookaremote-protocol"
+version = "0.1.0"
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "High-performance zero-allocation binary protocol v1 codec for LookARemote"
+
+[dependencies]
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+hex = "0.4"
+
+[[bench]]
+name = "protocol_bench"
+harness = false
+
+[[bench]]
+name = "codec_bench"
+harness = false

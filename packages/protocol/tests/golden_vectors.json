@@ -1,0 +1,231 @@
+{
+  "vectors": [
+    {
+      "name": "motion_neutral",
+      "hex": "010100010000000000000000000000000040420f00",
+      "header": {
+        "version": 1,
+        "type": 1,
+        "flags": 0,
+        "sequence": 1
+      },
+      "payload": {
+        "type": "motion",
+        "gyro_yaw": 0,
+        "gyro_pitch": 0,
+        "gyro_roll": 0,
+        "accel_x": 0,
+        "accel_y": 0,
+        "accel_z": 0,
+        "timestamp_us": 1000000
+      }
+    },
+    {
+      "name": "motion_active",
+      "hex": "010101d20424fac40948f4d503cefffc03404b4c00",
+      "header": {
+        "version": 1,
+        "type": 1,
+        "flags": 1,
+        "sequence": 1234
+      },
+      "payload": {
+        "type": "motion",
+        "gyro_yaw": -1500,
+        "gyro_pitch": 2500,
+        "gyro_roll": -3000,
+        "accel_x": 981,
+        "accel_y": -50,
+        "accel_z": 1020,
+        "timestamp_us": 5000000
+      }
+    },
+    {
+      "name": "gamepad_full_neutral",
+      "hex": "01020002000000000000000000000000000000",
+      "header": {
+        "version": 1,
+        "type": 2,
+        "flags": 0,
+        "sequence": 2
+      },
+      "payload": {
+        "type": "gamepad_full",
+        "buttons": 0,
+        "stick_lx": 0,
+        "stick_ly": 0,
+        "stick_rx": 0,
+        "stick_ry": 0,
+        "trigger_l": 0,
+        "trigger_r": 0,
+        "reserved": 0
+      }
+    },
+    {
+      "name": "gamepad_full_active",
+      "hex": "0102000001ff7f0080ff7fffffe803ff800000",
+      "header": {
+        "version": 1,
+        "type": 2,
+        "flags": 0,
+        "sequence": 256
+      },
+      "payload": {
+        "type": "gamepad_full",
+        "buttons": 32767,
+        "stick_lx": -32768,
+        "stick_ly": 32767,
+        "stick_rx": -1,
+        "stick_ry": 1000,
+        "trigger_l": 255,
+        "trigger_r": 128,
+        "reserved": 0
+      }
+    },
+    {
+      "name": "touchpad_neutral",
+      "hex": "010400030000000000000000",
+      "header": {
+        "version": 1,
+        "type": 4,
+        "flags": 0,
+        "sequence": 3
+      },
+      "payload": {
+        "type": "touchpad",
+        "dx": 0,
+        "dy": 0,
+        "scroll_v": 0,
+        "scroll_h": 0,
+        "buttons_mask": 0
+      }
+    },
+    {
+      "name": "touchpad_active",
+      "hex": "0104000a007800d3fffd0509",
+      "header": {
+        "version": 1,
+        "type": 4,
+        "flags": 0,
+        "sequence": 10
+      },
+      "payload": {
+        "type": "touchpad",
+        "dx": 120,
+        "dy": -45,
+        "scroll_v": -3,
+        "scroll_h": 5,
+        "buttons_mask": 9
+      }
+    },
+    {
+      "name": "keyboard_ctrl_shift_a",
+      "hex": "010501040004000103",
+      "header": {
+        "version": 1,
+        "type": 5,
+        "flags": 1,
+        "sequence": 4
+      },
+      "payload": {
+        "type": "keyboard",
+        "key_code": 4,
+        "state": 1,
+        "modifiers": 3
+      }
+    },
+    {
+      "name": "keyboard_release_enter",
+      "hex": "010500050028000000",
+      "header": {
+        "version": 1,
+        "type": 5,
+        "flags": 0,
+        "sequence": 5
+      },
+      "payload": {
+        "type": "keyboard",
+        "key_code": 40,
+        "state": 0,
+        "modifiers": 0
+      }
+    },
+    {
+      "name": "media_play_pause",
+      "hex": "01060006000100",
+      "header": {
+        "version": 1,
+        "type": 6,
+        "flags": 0,
+        "sequence": 6
+      },
+      "payload": {
+        "type": "media",
+        "media_action": 1,
+        "reserved": 0
+      }
+    },
+    {
+      "name": "media_vol_up",
+      "hex": "01060007000500",
+      "header": {
+        "version": 1,
+        "type": 6,
+        "flags": 0,
+        "sequence": 7
+      },
+      "payload": {
+        "type": "media",
+        "media_action": 5,
+        "reserved": 0
+      }
+    },
+    {
+      "name": "heartbeat_probe",
+      "hex": "01080008008087ec65efbeadde",
+      "header": {
+        "version": 1,
+        "type": 8,
+        "flags": 0,
+        "sequence": 8
+      },
+      "payload": {
+        "type": "heartbeat",
+        "client_epoch_ms": 1710000000,
+        "echo_token": 3735928559
+      }
+    },
+    {
+      "name": "haptic_both_rumble",
+      "hex": "010a02090002c8f401",
+      "header": {
+        "version": 1,
+        "type": 10,
+        "flags": 2,
+        "sequence": 9
+      },
+      "payload": {
+        "type": "haptic",
+        "motor_index": 2,
+        "intensity": 200,
+        "duration_ms": 500
+      }
+    },
+    {
+      "name": "haptic_left_click",
+      "hex": "010a00100000321900",
+      "header": {
+        "version": 1,
+        "type": 10,
+        "flags": 0,
+        "sequence": 16
+      },
+      "payload": {
+        "type": "haptic",
+        "motor_index": 0,
+        "intensity": 50,
+        "duration_ms": 25
+      }
+    }
+  ]
+}
