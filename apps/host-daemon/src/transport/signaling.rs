@@ -173,6 +173,7 @@ pub fn create_signaling_router(state: AppState) -> Router {
         .allow_headers(Any);
 
     Router::new()
+        .route("/", get(qr_page_handler))
         .route("/health", get(health_handler))
         .route("/qr", get(qr_page_handler))
         .route("/api/pair", post(pair_handler))
