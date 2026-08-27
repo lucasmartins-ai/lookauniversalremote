@@ -29,7 +29,6 @@ export const ShoulderTriggers: React.FC<ShoulderTriggersProps> = ({
   const onTriggerChangeRef = useRef(onTriggerChange);
   onTriggerChangeRef.current = onTriggerChange;
 
-  // Bumper Touch Handlers
   const handleBumperDown = useCallback(
     (e: React.PointerEvent<HTMLButtonElement>) => {
       e.currentTarget.setPointerCapture(e.pointerId);
@@ -53,14 +52,12 @@ export const ShoulderTriggers: React.FC<ShoulderTriggersProps> = ({
     [side]
   );
 
-  // Trigger Touch & Slide Handlers
   const handleTriggerDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
       e.currentTarget.setPointerCapture(e.pointerId);
       triggerPointerIdRef.current = e.pointerId;
       triggerStartYRef.current = e.clientY;
 
-      // Start at half or full tap value
       const initialVal = 255;
       setTriggerValue(initialVal);
       haptics.lightTap();
@@ -74,7 +71,6 @@ export const ShoulderTriggers: React.FC<ShoulderTriggersProps> = ({
       if (triggerPointerIdRef.current !== e.pointerId || triggerStartYRef.current === null) return;
 
       const deltaY = e.clientY - triggerStartYRef.current;
-      // Moving finger downwards slides trigger depth
       const maxDragPx = 40;
       const normalized = Math.max(0.1, Math.min(1.0, 1.0 - deltaY / maxDragPx));
       const val = Math.round(normalized * 255);
@@ -120,49 +116,49 @@ export const ShoulderTriggers: React.FC<ShoulderTriggersProps> = ({
         userSelect: 'none',
       }}
     >
-      {/* Bumper Button (LB / RB) */}
+      {/* 3D Bumper Button (LB / RB) */}
       <button
         onPointerDown={handleBumperDown}
         onPointerUp={handleBumperUp}
         onPointerCancel={handleBumperUp}
+        className="lookaremote-btn retro-btn"
         style={{
           width: '100%',
           height: '38px',
-          borderRadius: '8px',
-          backgroundColor: bumperPressed ? color : 'rgba(15, 20, 28, 0.85)',
+          borderRadius: '9px',
+          background: bumperPressed
+            ? isLeft
+              ? 'linear-gradient(180deg, #008ba3 0%, #00e5ff 100%)'
+              : 'linear-gradient(180deg, #b37400 0%, #ffb703 100%)'
+            : 'linear-gradient(180deg, #222d42 0%, #161e2e 100%)',
           border: `1.5px solid ${bumperPressed ? color : 'rgba(255, 255, 255, 0.2)'}`,
-          color: bumperPressed ? '#000000' : 'var(--color-text-primary)',
+          color: bumperPressed ? '#040d1a' : 'var(--color-text-primary)',
           fontFamily: 'var(--font-display)',
-          fontSize: '0.9rem',
-          fontWeight: 700,
-          letterSpacing: '0.05em',
+          fontSize: '0.95rem',
+          fontWeight: 800,
+          letterSpacing: '0.06em',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           boxShadow: bumperPressed
-            ? `0 0 12px ${color}`
-            : '0 2px 4px rgba(0, 0, 0, 0.5)',
-          cursor: 'pointer',
-          touchAction: 'none',
-          userSelect: 'none',
-          transition: 'background-color 0.08s ease, color 0.08s ease, box-shadow 0.08s ease',
+            ? isLeft ? 'var(--neo-shadow-button-cyan-pressed)' : 'var(--neo-shadow-button-amber-pressed)'
+            : 'var(--neo-shadow-button-slate)',
         }}
       >
         {bumperLabel}
       </button>
 
-      {/* Analog Trigger Slider / Pad (LT / RT) */}
+      {/* 3D Analog Trigger Slider / Pad (LT / RT) */}
       <div
         onPointerDown={handleTriggerDown}
         onPointerMove={handleTriggerMove}
         onPointerUp={handleTriggerUp}
         onPointerCancel={handleTriggerUp}
+        className="neo-sunken"
         style={{
           width: '100%',
           height: '46px',
-          borderRadius: '8px',
-          backgroundColor: 'rgba(10, 14, 20, 0.9)',
-          border: `1.5px solid ${triggerValue > 0 ? color : 'rgba(255, 255, 255, 0.15)'}`,
+          borderRadius: '9px',
           position: 'relative',
           overflow: 'hidden',
           display: 'flex',
@@ -171,7 +167,8 @@ export const ShoulderTriggers: React.FC<ShoulderTriggersProps> = ({
           cursor: 'pointer',
           touchAction: 'none',
           userSelect: 'none',
-          boxShadow: triggerValue > 0 ? `0 0 10px ${color}40` : 'none',
+          border: `1.5px solid ${triggerValue > 0 ? color : 'rgba(255, 255, 255, 0.15)'}`,
+          boxShadow: triggerValue > 0 ? `0 0 12px ${color}40, var(--neo-shadow-sunken)` : 'var(--neo-shadow-sunken)',
         }}
       >
         {/* Dynamic Progress Fill Level */}
@@ -182,7 +179,9 @@ export const ShoulderTriggers: React.FC<ShoulderTriggersProps> = ({
             left: 0,
             right: 0,
             height: `${(triggerValue / 255) * 100}%`,
-            backgroundColor: `${color}35`,
+            background: isLeft
+              ? 'linear-gradient(180deg, rgba(0, 229, 255, 0.45) 0%, rgba(0, 180, 216, 0.2) 100%)'
+              : 'linear-gradient(180deg, rgba(255, 183, 3, 0.45) 0%, rgba(255, 158, 0, 0.2) 100%)',
             borderTop: triggerValue > 0 ? `2px solid ${color}` : 'none',
             pointerEvents: 'none',
             transition: 'height 0.04s linear',
@@ -193,11 +192,12 @@ export const ShoulderTriggers: React.FC<ShoulderTriggersProps> = ({
           style={{
             fontFamily: 'var(--font-display)',
             fontSize: '0.95rem',
-            fontWeight: 800,
+            fontWeight: 900,
             color: triggerValue > 0 ? color : 'var(--color-text-secondary)',
-            letterSpacing: '0.05em',
+            letterSpacing: '0.06em',
             zIndex: 2,
             pointerEvents: 'none',
+            textShadow: triggerValue > 0 ? `0 0 8px ${color}` : '0 1px 2px #000',
           }}
         >
           {triggerLabel} {triggerValue > 0 && <span style={{ fontSize: '0.75rem' }}>({Math.round((triggerValue / 255) * 100)}%)</span>}

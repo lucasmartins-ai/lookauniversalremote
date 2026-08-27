@@ -6,6 +6,7 @@
 import { x25519 } from '@noble/curves/ed25519';
 import { hmac } from '@noble/hashes/hmac';
 import { sha256 } from '@noble/hashes/sha256';
+import { HostConnectionManager } from '../../transport/HostConnectionManager';
 
 export const PAIRING_HMAC_CONTEXT_STRING = 'LOOKAREMOTE_PAIRING_V1:';
 const PAIRING_HMAC_CONTEXT_BYTES = new TextEncoder().encode(PAIRING_HMAC_CONTEXT_STRING);
@@ -213,7 +214,7 @@ export async function performPairingHandshake(
     hmac_proof: hmacProof,
   };
 
-  const endpoint = `http://${params.host}:${params.port}/api/pair`;
+  const endpoint = HostConnectionManager.getPairingEndpoint(params.host, params.port);
 
   const res = await fetchImpl(endpoint, {
     method: 'POST',

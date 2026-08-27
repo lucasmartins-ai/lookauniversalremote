@@ -7,10 +7,10 @@ use std::net::IpAddr;
 pub const DEFAULT_PORT: u16 = 8765;
 
 /// Default watchdog timeout in milliseconds.
-pub const DEFAULT_WATCHDOG_TIMEOUT_MS: u64 = 100;
+pub const DEFAULT_WATCHDOG_TIMEOUT_MS: u64 = 300;
 
 /// Default watchdog check interval in milliseconds.
-pub const DEFAULT_WATCHDOG_CHECK_INTERVAL_MS: u64 = 10;
+pub const DEFAULT_WATCHDOG_CHECK_INTERVAL_MS: u64 = 20;
 
 /// Default pairing nonce TTL in seconds.
 pub const DEFAULT_NONCE_TTL_SECS: u64 = 60;

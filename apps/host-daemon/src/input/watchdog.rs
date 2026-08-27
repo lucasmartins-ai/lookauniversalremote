@@ -148,6 +148,6 @@ impl DeadManWatchdog {
 
     /// Stops the monitor task.
     pub fn stop(&self) {
-        self.stop_notify.notify_waiters();
+        self.stop_notify.notify_one();
     }
 }

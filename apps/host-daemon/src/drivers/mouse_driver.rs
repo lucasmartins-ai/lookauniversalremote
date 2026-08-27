@@ -151,9 +151,13 @@ impl UInputMouseDriver {
             .with_keys(&keys)
             .map_err(|e| DriverError::Internal(format!("Failed to register mouse keys: {e}")))?
             .with_relative_axes(&rel_axes)
-            .map_err(|e| DriverError::Internal(format!("Failed to register mouse relative axes: {e}")))?
+            .map_err(|e| {
+                DriverError::Internal(format!("Failed to register mouse relative axes: {e}"))
+            })?
             .build()
-            .map_err(|e| DriverError::PermissionDenied(format!("Failed to build uinput virtual mouse: {e}")))?;
+            .map_err(|e| {
+                DriverError::PermissionDenied(format!("Failed to build uinput virtual mouse: {e}"))
+            })?;
 
         info!("Successfully created Linux /dev/uinput virtual relative mouse");
         Ok(Self { device })
@@ -175,7 +179,11 @@ impl VirtualMouseDriver for UInputMouseDriver {
         let events = [
             EvdevInputEvent::new(EventType::RELATIVE, RelativeAxisType::REL_X.0, dx),
             EvdevInputEvent::new(EventType::RELATIVE, RelativeAxisType::REL_Y.0, dy),
-            EvdevInputEvent::new(EventType::SYNCHRONIZATION, SynchronizationCode::SYN_REPORT.0, 0),
+            EvdevInputEvent::new(
+                EventType::SYNCHRONIZATION,
+                SynchronizationCode::SYN_REPORT.0,
+                0,
+            ),
         ];
 
         self.emit_events(&events)
@@ -191,7 +199,11 @@ impl VirtualMouseDriver for UInputMouseDriver {
 
         let events = [
             EvdevInputEvent::new(EventType::KEY, key.code(), 1),
-            EvdevInputEvent::new(EventType::SYNCHRONIZATION, SynchronizationCode::SYN_REPORT.0, 0),
+            EvdevInputEvent::new(
+                EventType::SYNCHRONIZATION,
+                SynchronizationCode::SYN_REPORT.0,
+                0,
+            ),
         ];
 
         self.emit_events(&events)
@@ -207,7 +219,11 @@ impl VirtualMouseDriver for UInputMouseDriver {
 
         let events = [
             EvdevInputEvent::new(EventType::KEY, key.code(), 0),
-            EvdevInputEvent::new(EventType::SYNCHRONIZATION, SynchronizationCode::SYN_REPORT.0, 0),
+            EvdevInputEvent::new(
+                EventType::SYNCHRONIZATION,
+                SynchronizationCode::SYN_REPORT.0,
+                0,
+            ),
         ];
 
         self.emit_events(&events)
@@ -215,9 +231,21 @@ impl VirtualMouseDriver for UInputMouseDriver {
 
     fn scroll(&mut self, scroll_v: i8, scroll_h: i8) -> Result<(), DriverError> {
         let events = [
-            EvdevInputEvent::new(EventType::RELATIVE, RelativeAxisType::REL_WHEEL.0, scroll_v as i32),
-            EvdevInputEvent::new(EventType::RELATIVE, RelativeAxisType::REL_HWHEEL.0, scroll_h as i32),
-            EvdevInputEvent::new(EventType::SYNCHRONIZATION, SynchronizationCode::SYN_REPORT.0, 0),
+            EvdevInputEvent::new(
+                EventType::RELATIVE,
+                RelativeAxisType::REL_WHEEL.0,
+                scroll_v as i32,
+            ),
+            EvdevInputEvent::new(
+                EventType::RELATIVE,
+                RelativeAxisType::REL_HWHEEL.0,
+                scroll_h as i32,
+            ),
+            EvdevInputEvent::new(
+                EventType::SYNCHRONIZATION,
+                SynchronizationCode::SYN_REPORT.0,
+                0,
+            ),
         ];
 
         self.emit_events(&events)
@@ -228,7 +256,11 @@ impl VirtualMouseDriver for UInputMouseDriver {
             EvdevInputEvent::new(EventType::KEY, Key::BTN_LEFT.code(), 0),
             EvdevInputEvent::new(EventType::KEY, Key::BTN_RIGHT.code(), 0),
             EvdevInputEvent::new(EventType::KEY, Key::BTN_MIDDLE.code(), 0),
-            EvdevInputEvent::new(EventType::SYNCHRONIZATION, SynchronizationCode::SYN_REPORT.0, 0),
+            EvdevInputEvent::new(
+                EventType::SYNCHRONIZATION,
+                SynchronizationCode::SYN_REPORT.0,
+                0,
+            ),
         ];
 
         self.emit_events(&events)

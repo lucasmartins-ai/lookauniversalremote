@@ -137,7 +137,10 @@ impl ContextWatcher {
     }
 
     /// Executes a single discrete polling and debounce evaluation cycle.
-    pub async fn poll_step(&self, debounce_state: &mut WatcherDebounceState) -> Option<ContextWatcherEvent> {
+    pub async fn poll_step(
+        &self,
+        debounce_state: &mut WatcherDebounceState,
+    ) -> Option<ContextWatcherEvent> {
         let current_window = match self.detector.get_active_window() {
             Ok(w) => w,
             Err(e) => {
@@ -209,7 +212,10 @@ impl ContextWatcher {
                     if let Err(e) = dc.send(&data).await {
                         warn!("Failed to broadcast MSG_MODE_SWITCH over DataChannel: {e}");
                     } else {
-                        debug!("Broadcasted MSG_MODE_SWITCH ({:?}) to client", arb_result.active_mode);
+                        debug!(
+                            "Broadcasted MSG_MODE_SWITCH ({:?}) to client",
+                            arb_result.active_mode
+                        );
                     }
                 }
             }
@@ -231,7 +237,10 @@ impl ContextWatcher {
             let mut debounce_state = WatcherDebounceState::default();
             let poll_duration = Duration::from_millis(watcher.config.poll_interval_ms.max(100));
 
-            debug!(interval_ms = watcher.config.poll_interval_ms, "ContextWatcher loop started");
+            debug!(
+                interval_ms = watcher.config.poll_interval_ms,
+                "ContextWatcher loop started"
+            );
 
             loop {
                 tokio::time::sleep(poll_duration).await;

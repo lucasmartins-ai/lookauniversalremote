@@ -7,7 +7,9 @@ fn test_mock_keyboard_driver_key_lifecycle() {
     assert_eq!(driver.key_events_count, 0);
 
     // 1. Key Down: 'A' (HID 0x04) with no modifiers
-    driver.key_event(0x04, 1, 0).expect("key down should succeed");
+    driver
+        .key_event(0x04, 1, 0)
+        .expect("key down should succeed");
     assert!(!driver.is_neutral);
     assert_eq!(driver.key_events_count, 1);
     assert_eq!(driver.last_key, Some((0x04, 1, 0)));
@@ -15,7 +17,9 @@ fn test_mock_keyboard_driver_key_lifecycle() {
     assert_eq!(driver.active_modifiers, 0);
 
     // 2. Key Repeat: 'A' (HID 0x04)
-    driver.key_event(0x04, 2, 0).expect("key repeat should succeed");
+    driver
+        .key_event(0x04, 2, 0)
+        .expect("key repeat should succeed");
     assert_eq!(driver.key_events_count, 2);
     assert_eq!(driver.last_key, Some((0x04, 2, 0)));
     assert!(driver.pressed_keys.contains(&0x04));
@@ -33,12 +37,16 @@ fn test_mock_keyboard_driver_modifiers_and_multi_key() {
     let mut driver = MockKeyboardDriver::new();
 
     // Press Ctrl (0x01) + 'C' (0x06)
-    driver.key_event(0x06, 1, 0x01).expect("key down should succeed");
+    driver
+        .key_event(0x06, 1, 0x01)
+        .expect("key down should succeed");
     assert_eq!(driver.active_modifiers, 0x01);
     assert!(driver.pressed_keys.contains(&0x06));
 
     // Press 'V' (0x19) while Ctrl is active
-    driver.key_event(0x19, 1, 0x01).expect("key down should succeed");
+    driver
+        .key_event(0x19, 1, 0x01)
+        .expect("key down should succeed");
     assert_eq!(driver.pressed_keys.len(), 2);
 
     // Neutralize

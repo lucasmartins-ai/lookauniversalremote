@@ -8,28 +8,21 @@ export interface DPadProps {
   size?: number;
 }
 
-/**
- * Maps coordinate offset to 8-way D-Pad direction bitmask.
- */
 export function calculateDPadMask(dx: number, dy: number, minDistance = 14): number {
   const distance = Math.hypot(dx, dy);
   if (distance < minDistance) {
     return 0;
   }
 
-  // Angle in degrees from -180 to 180
   const angleDeg = (Math.atan2(dy, dx) * 180) / Math.PI;
-
   let mask = 0;
 
-  // Horizontal evaluation
   if (angleDeg >= -67.5 && angleDeg <= 67.5) {
     mask |= GamepadButtonMask.DPAD_RIGHT;
   } else if (angleDeg >= 112.5 || angleDeg <= -112.5) {
     mask |= GamepadButtonMask.DPAD_LEFT;
   }
 
-  // Vertical evaluation (dy < 0 is UP on screen)
   if (angleDeg >= -157.5 && angleDeg <= -22.5) {
     mask |= GamepadButtonMask.DPAD_UP;
   } else if (angleDeg >= 22.5 && angleDeg <= 157.5) {
@@ -108,7 +101,7 @@ export const DPad: React.FC<DPadProps> = ({ onDirectionChange, size = 180 }) => 
   }, []);
 
   const wingSize = Math.round(size * 0.36);
-  const centerSize = Math.round(size * 0.28);
+  const centerSize = Math.round(size * 0.30);
 
   const isUp = (activeMask & GamepadButtonMask.DPAD_UP) !== 0;
   const isDown = (activeMask & GamepadButtonMask.DPAD_DOWN) !== 0;
@@ -122,137 +115,152 @@ export const DPad: React.FC<DPadProps> = ({ onDirectionChange, size = 180 }) => 
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerUp}
+      className="neo-sunken"
       style={{
         width: `${size}px`,
         height: `${size}px`,
+        borderRadius: '50%',
         position: 'relative',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         touchAction: 'none',
         userSelect: 'none',
+        padding: '6px',
+        boxShadow: 'var(--neo-shadow-sunken)',
       }}
     >
-      {/* Background Cross Body */}
+      {/* Background 3D Cross Structure */}
       {/* Vertical Bar */}
       <div
+        className="neo-raised"
         style={{
           position: 'absolute',
           width: `${centerSize}px`,
-          height: `${size}px`,
-          backgroundColor: 'rgba(10, 15, 22, 0.85)',
-          border: '1px solid rgba(255, 255, 255, 0.15)',
+          height: `${size - 16}px`,
           borderRadius: '10px',
-          boxShadow: 'inset 0 0 10px rgba(0, 0, 0, 0.8)',
+          boxShadow: '0 4px 10px rgba(0, 0, 0, 0.8)',
           pointerEvents: 'none',
         }}
       />
       {/* Horizontal Bar */}
       <div
+        className="neo-raised"
         style={{
           position: 'absolute',
-          width: `${size}px`,
+          width: `${size - 16}px`,
           height: `${centerSize}px`,
-          backgroundColor: 'rgba(10, 15, 22, 0.85)',
-          border: '1px solid rgba(255, 255, 255, 0.15)',
           borderRadius: '10px',
-          boxShadow: 'inset 0 0 10px rgba(0, 0, 0, 0.8)',
+          boxShadow: '0 4px 10px rgba(0, 0, 0, 0.8)',
           pointerEvents: 'none',
         }}
       />
 
-      {/* Up Wing Indicator */}
+      {/* Up Wing */}
       <div
         style={{
           position: 'absolute',
-          top: 0,
+          top: '8px',
           width: `${centerSize}px`,
           height: `${wingSize}px`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: isUp ? 'var(--color-neon-cyan)' : 'transparent',
-          borderTopLeftRadius: '8px',
-          borderTopRightRadius: '8px',
-          boxShadow: isUp ? '0 0 12px var(--color-neon-cyan)' : 'none',
-          transition: 'background-color 0.08s ease',
+          background: isUp
+            ? 'linear-gradient(180deg, #00f0ff 0%, #00b4d8 100%)'
+            : 'transparent',
+          borderTopLeftRadius: '9px',
+          borderTopRightRadius: '9px',
+          boxShadow: isUp ? 'var(--neo-shadow-button-cyan-pressed)' : 'none',
+          transition: 'background 0.08s ease, transform 0.08s ease',
+          transform: isUp ? 'translateY(2px)' : 'none',
           pointerEvents: 'none',
         }}
       >
-        <ChevronUp size={22} color={isUp ? '#000000' : 'var(--color-text-secondary)'} />
+        <ChevronUp size={24} color={isUp ? '#040d1a' : 'var(--color-neon-cyan)'} />
       </div>
 
-      {/* Down Wing Indicator */}
+      {/* Down Wing */}
       <div
         style={{
           position: 'absolute',
-          bottom: 0,
+          bottom: '8px',
           width: `${centerSize}px`,
           height: `${wingSize}px`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: isDown ? 'var(--color-neon-cyan)' : 'transparent',
-          borderBottomLeftRadius: '8px',
-          borderBottomRightRadius: '8px',
-          boxShadow: isDown ? '0 0 12px var(--color-neon-cyan)' : 'none',
-          transition: 'background-color 0.08s ease',
+          background: isDown
+            ? 'linear-gradient(180deg, #00f0ff 0%, #00b4d8 100%)'
+            : 'transparent',
+          borderBottomLeftRadius: '9px',
+          borderBottomRightRadius: '9px',
+          boxShadow: isDown ? 'var(--neo-shadow-button-cyan-pressed)' : 'none',
+          transition: 'background 0.08s ease, transform 0.08s ease',
+          transform: isDown ? 'translateY(2px)' : 'none',
           pointerEvents: 'none',
         }}
       >
-        <ChevronDown size={22} color={isDown ? '#000000' : 'var(--color-text-secondary)'} />
+        <ChevronDown size={24} color={isDown ? '#040d1a' : 'var(--color-neon-cyan)'} />
       </div>
 
-      {/* Left Wing Indicator */}
+      {/* Left Wing */}
       <div
         style={{
           position: 'absolute',
-          left: 0,
+          left: '8px',
           width: `${wingSize}px`,
           height: `${centerSize}px`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: isLeft ? 'var(--color-neon-cyan)' : 'transparent',
-          borderTopLeftRadius: '8px',
-          borderBottomLeftRadius: '8px',
-          boxShadow: isLeft ? '0 0 12px var(--color-neon-cyan)' : 'none',
-          transition: 'background-color 0.08s ease',
+          background: isLeft
+            ? 'linear-gradient(180deg, #00f0ff 0%, #00b4d8 100%)'
+            : 'transparent',
+          borderTopLeftRadius: '9px',
+          borderBottomLeftRadius: '9px',
+          boxShadow: isLeft ? 'var(--neo-shadow-button-cyan-pressed)' : 'none',
+          transition: 'background 0.08s ease, transform 0.08s ease',
+          transform: isLeft ? 'translateX(2px)' : 'none',
           pointerEvents: 'none',
         }}
       >
-        <ChevronLeft size={22} color={isLeft ? '#000000' : 'var(--color-text-secondary)'} />
+        <ChevronLeft size={24} color={isLeft ? '#040d1a' : 'var(--color-neon-cyan)'} />
       </div>
 
-      {/* Right Wing Indicator */}
+      {/* Right Wing */}
       <div
         style={{
           position: 'absolute',
-          right: 0,
+          right: '8px',
           width: `${wingSize}px`,
           height: `${centerSize}px`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: isRight ? 'var(--color-neon-cyan)' : 'transparent',
-          borderTopRightRadius: '8px',
-          borderBottomRightRadius: '8px',
-          boxShadow: isRight ? '0 0 12px var(--color-neon-cyan)' : 'none',
-          transition: 'background-color 0.08s ease',
+          background: isRight
+            ? 'linear-gradient(180deg, #00f0ff 0%, #00b4d8 100%)'
+            : 'transparent',
+          borderTopRightRadius: '9px',
+          borderBottomRightRadius: '9px',
+          boxShadow: isRight ? 'var(--neo-shadow-button-cyan-pressed)' : 'none',
+          transition: 'background 0.08s ease, transform 0.08s ease',
+          transform: isRight ? 'translateX(-2px)' : 'none',
           pointerEvents: 'none',
         }}
       >
-        <ChevronRight size={22} color={isRight ? '#000000' : 'var(--color-text-secondary)'} />
+        <ChevronRight size={24} color={isRight ? '#040d1a' : 'var(--color-neon-cyan)'} />
       </div>
 
-      {/* Center Pivot */}
+      {/* Center Concave Pivot Dome */}
       <div
         style={{
-          width: `${Math.round(centerSize * 0.7)}px`,
-          height: `${Math.round(centerSize * 0.7)}px`,
+          width: `${Math.round(centerSize * 0.75)}px`,
+          height: `${Math.round(centerSize * 0.75)}px`,
           borderRadius: '50%',
-          backgroundColor: 'rgba(5, 8, 12, 0.95)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
+          background: 'linear-gradient(180deg, #0d121c 0%, #171f2e 100%)',
+          border: '1px solid rgba(255, 255, 255, 0.15)',
+          boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.8), 0 1px 2px rgba(255, 255, 255, 0.1)',
           pointerEvents: 'none',
           zIndex: 2,
         }}

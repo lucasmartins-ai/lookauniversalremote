@@ -8,7 +8,7 @@ export interface SpinnerProps {
 }
 
 export const Spinner: React.FC<SpinnerProps> = ({
-  size = 40,
+  size = 48,
   color = 'var(--color-neon-cyan)',
   className = '',
   label,
@@ -21,61 +21,69 @@ export const Spinner: React.FC<SpinnerProps> = ({
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: '12px',
+        gap: '14px',
       }}
     >
       <div
+        className="neo-sunken-deep"
         style={{
-          width: `${size}px`,
-          height: `${size}px`,
+          width: `${size + 24}px`,
+          height: `${size + 24}px`,
+          borderRadius: '50%',
           position: 'relative',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
+          boxShadow: 'inset 0 4px 10px #000, 0 2px 6px rgba(255, 255, 255, 0.05)',
         }}
       >
-        {/* Outer Ring */}
+        {/* Outer CRT/Radar Ring */}
         <div
           style={{
             position: 'absolute',
-            inset: 0,
+            width: `${size}px`,
+            height: `${size}px`,
             borderRadius: '50%',
-            border: `2px solid rgba(0, 229, 255, 0.15)`,
+            border: `1.5px dashed rgba(0, 229, 255, 0.25)`,
           }}
         />
-        {/* Rotating Arc */}
+        {/* Rotating Radar Sweep Beam */}
         <div
           className="animate-radar-sweep"
           style={{
             position: 'absolute',
-            inset: 0,
+            width: `${size}px`,
+            height: `${size}px`,
             borderRadius: '50%',
-            border: `2px solid transparent`,
+            border: `2.5px solid transparent`,
             borderTopColor: color,
             borderRightColor: color,
-            filter: `drop-shadow(0 0 6px ${color})`,
+            filter: `drop-shadow(0 0 8px ${color})`,
           }}
         />
-        {/* Inner Pulsing Core */}
+        {/* Inner Phosphor Core */}
         <div
           className="animate-pulse-glow"
           style={{
-            width: `${Math.max(6, size * 0.25)}px`,
-            height: `${Math.max(6, size * 0.25)}px`,
+            width: `${Math.max(8, size * 0.25)}px`,
+            height: `${Math.max(8, size * 0.25)}px`,
             borderRadius: '50%',
             backgroundColor: color,
+            boxShadow: `0 0 12px ${color}`,
           }}
         />
       </div>
 
       {label && (
         <span
+          className="retro-embossed-text"
           style={{
             fontFamily: 'var(--font-mono)',
             fontSize: '0.8rem',
-            color: 'var(--color-text-secondary)',
-            letterSpacing: '0.1em',
+            color: 'var(--color-text-primary)',
+            letterSpacing: '0.12em',
             textTransform: 'uppercase',
+            fontWeight: 700,
           }}
         >
           {label}

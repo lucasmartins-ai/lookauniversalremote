@@ -129,7 +129,6 @@ export const GamepadView: React.FC<GamepadViewProps> = ({
     motionSamplerRef.current = mSampler;
     mSampler.start();
 
-    // Periodic state check for UI gyro indicator
     const gyroStatusInterval = setInterval(() => {
       setIsGyroAimActive(gyroController.isAimActive());
     }, 100);
@@ -145,7 +144,6 @@ export const GamepadView: React.FC<GamepadViewProps> = ({
     };
   }, [bridge, gamepad, gyroController, settings.gamepadSampleRate, settings.gyroSampleRate]);
 
-  // Update sample rates dynamically if settings change
   useEffect(() => {
     if (gamepadSamplerRef.current) {
       gamepadSamplerRef.current.setSampleRate(settings.gamepadSampleRate || 120);
@@ -155,7 +153,6 @@ export const GamepadView: React.FC<GamepadViewProps> = ({
     }
   }, [settings.gamepadSampleRate, settings.gyroSampleRate]);
 
-  // Forward Left Trigger to GyroAimController for Hold-LT aiming
   const handleTriggerChange = (side: 'left' | 'right', value: number) => {
     gamepad.setTrigger(side, value);
     if (side === 'left') {
@@ -164,7 +161,6 @@ export const GamepadView: React.FC<GamepadViewProps> = ({
     }
   };
 
-  // Fullscreen toggle handler
   const toggleFullscreen = async () => {
     try {
       if (!document.fullscreenElement) {
@@ -194,7 +190,7 @@ export const GamepadView: React.FC<GamepadViewProps> = ({
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        backgroundColor: '#000000',
+        backgroundColor: '#070a0f',
         color: 'var(--color-text-primary)',
         overflow: 'hidden',
         position: 'relative',
@@ -202,19 +198,18 @@ export const GamepadView: React.FC<GamepadViewProps> = ({
         userSelect: 'none',
       }}
     >
-      {/* Top Header Controls Bar */}
+      {/* Top 3D Header Controls Bar */}
       <div
+        className="neo-raised"
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: '8px 16px',
-          backgroundColor: 'rgba(5, 8, 12, 0.85)',
-          borderBottom: '1px solid var(--color-border-subtle)',
           zIndex: 30,
         }}
       >
-        {/* Left: Mode Switcher & Quick Emergency Reset */}
+        {/* Left: Mode Switcher & Emergency Reset */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           {onSelectMode && (
             <div style={{ display: 'flex', gap: '4px' }}>
@@ -271,7 +266,7 @@ export const GamepadView: React.FC<GamepadViewProps> = ({
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <SystemButtons onButtonChange={gamepad.setButton} />
 
-          {/* Gyro Aim Quick Status & Toggle Badge */}
+          {/* Gyro Aim Quick Status Toggle */}
           {settings.gyroAimMode !== 'disabled' && (
             <button
               onClick={() => {
@@ -283,25 +278,27 @@ export const GamepadView: React.FC<GamepadViewProps> = ({
                   onOpenSettings();
                 }
               }}
+              className="lookaremote-btn retro-btn"
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: '5px',
-                padding: '4px 8px',
-                borderRadius: '6px',
+                padding: '6px 10px',
+                borderRadius: '8px',
                 border: isGyroAimActive
                   ? '1px solid var(--color-neon-green)'
-                  : '1px solid var(--color-border-subtle)',
-                backgroundColor: isGyroAimActive
-                  ? 'rgba(0, 255, 159, 0.15)'
-                  : 'rgba(255, 255, 255, 0.05)',
-                color: isGyroAimActive
-                  ? 'var(--color-neon-green)'
-                  : 'var(--color-text-secondary)',
-                fontSize: '0.7rem',
+                  : '1px solid rgba(255, 255, 255, 0.15)',
+                background: isGyroAimActive
+                  ? 'linear-gradient(180deg, #00f59b 0%, #00a86b 100%)'
+                  : 'linear-gradient(180deg, #222d42 0%, #161e2e 100%)',
+                color: isGyroAimActive ? '#040d1a' : 'var(--color-text-secondary)',
+                fontSize: '0.72rem',
                 fontFamily: 'var(--font-mono)',
-                fontWeight: 600,
+                fontWeight: 800,
                 cursor: 'pointer',
+                boxShadow: isGyroAimActive
+                  ? 'var(--neo-shadow-button-green)'
+                  : 'var(--neo-shadow-button-slate)',
               }}
               title={`Gyro Aim: ${settings.gyroAimMode.toUpperCase()} (${isGyroAimActive ? 'ACTIVE' : 'IDLE'})`}
             >
@@ -381,13 +378,13 @@ export const GamepadView: React.FC<GamepadViewProps> = ({
         />
       )}
 
-      {/* Main Dual Grip Landscape Surface */}
+      {/* Main Dual Grip Landscape Surface with 3D Neumorphic Plates */}
       <div
         style={{
           flex: 1,
           display: 'grid',
           gridTemplateColumns: '1fr auto 1fr',
-          padding: '12px 16px',
+          padding: '12px 18px',
           alignItems: 'center',
           justifyItems: 'center',
           position: 'relative',
@@ -419,7 +416,7 @@ export const GamepadView: React.FC<GamepadViewProps> = ({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'flex-start',
-              gap: '16px',
+              gap: '18px',
               width: '100%',
               marginTop: 'auto',
             }}
@@ -439,28 +436,29 @@ export const GamepadView: React.FC<GamepadViewProps> = ({
               }}
             />
 
-            <DPad size={140} onDirectionChange={gamepad.setDPad} />
+            <DPad size={145} onDirectionChange={gamepad.setDPad} />
           </div>
         </div>
 
-        {/* CENTER REST ZONE / LOGO WATERMARK */}
+        {/* CENTER REST ZONE / 3D HARDWARE EMBOSSED LOGO */}
         <div
           style={{
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            opacity: 0.15,
+            opacity: 0.25,
             pointerEvents: 'none',
             userSelect: 'none',
           }}
         >
           <div
+            className="retro-embossed-text"
             style={{
               fontFamily: 'var(--font-display)',
-              fontSize: '1.2rem',
+              fontSize: '1.3rem',
               fontWeight: 900,
-              letterSpacing: '0.15em',
+              letterSpacing: '0.18em',
               color: 'var(--color-neon-cyan)',
             }}
           >
@@ -469,12 +467,13 @@ export const GamepadView: React.FC<GamepadViewProps> = ({
           <div
             style={{
               fontFamily: 'var(--font-mono)',
-              fontSize: '0.65rem',
+              fontSize: '0.68rem',
               color: 'var(--color-text-muted)',
-              letterSpacing: '0.1em',
+              letterSpacing: '0.12em',
+              fontWeight: 700,
             }}
           >
-            {activeLayout.name.toUpperCase()} • {settings.gamepadSampleRate || 120}HZ SAMPLER
+            {activeLayout.name.toUpperCase()} • 120HZ GAMEPAD DECK
           </div>
         </div>
 
@@ -503,7 +502,7 @@ export const GamepadView: React.FC<GamepadViewProps> = ({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'flex-end',
-              gap: '16px',
+              gap: '18px',
               width: '100%',
               marginTop: 'auto',
             }}
@@ -523,7 +522,7 @@ export const GamepadView: React.FC<GamepadViewProps> = ({
               }}
             />
 
-            <ActionDiamond size={150} onButtonChange={gamepad.setButton} />
+            <ActionDiamond size={155} onButtonChange={gamepad.setButton} />
           </div>
         </div>
       </div>

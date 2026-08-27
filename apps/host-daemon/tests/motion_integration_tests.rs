@@ -85,7 +85,7 @@ fn test_motion_processor_roll_mix_and_axis_inversion() {
     });
 
     let msg = MotionMessage {
-        gyro_yaw: 500,  // 0.5 rad/s
+        gyro_yaw: 500,   // 0.5 rad/s
         gyro_pitch: 400, // 0.4 rad/s
         gyro_roll: 1000, // 1.0 rad/s -> combined horizontal = 0.5 + 1.0 * 0.5 = 1.0 rad/s
         accel_x: 0,

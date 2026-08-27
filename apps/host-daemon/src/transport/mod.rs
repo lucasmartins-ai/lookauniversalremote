@@ -7,8 +7,7 @@ pub mod signaling;
 pub mod webrtc;
 
 pub use network::{
-    discover_local_ip, is_private_ip, is_rfc1918_or_loopback, validate_bind_address,
-    NetworkError,
+    discover_local_ip, is_private_ip, is_rfc1918_or_loopback, validate_bind_address, NetworkError,
 };
 pub use packet_handler::{handle_raw_packet, handle_raw_slot_packet};
 pub use qr_page::render_qr_html;

@@ -44,8 +44,7 @@ impl HeartbeatMessage {
         let token = self.echo_token.to_le_bytes();
 
         [
-            epoch[0], epoch[1], epoch[2], epoch[3],
-            token[0], token[1], token[2], token[3],
+            epoch[0], epoch[1], epoch[2], epoch[3], token[0], token[1], token[2], token[3],
         ]
     }
 

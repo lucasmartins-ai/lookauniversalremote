@@ -8,9 +8,7 @@ use lookaremote_host_daemon::input::watchdog::DeadManWatchdog;
 use lookaremote_host_daemon::pairing::crypto::HostKeyPair;
 use lookaremote_host_daemon::pairing::nonce::NonceManager;
 use lookaremote_host_daemon::pairing::qr::{build_pairing_uri, render_terminal_qr};
-use lookaremote_host_daemon::transport::network::{
-    discover_local_ip, validate_bind_address,
-};
+use lookaremote_host_daemon::transport::network::{discover_local_ip, validate_bind_address};
 use lookaremote_host_daemon::transport::signaling::create_signaling_router;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -51,7 +49,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 2. Ephemeral Cryptographic Handshake Initialization
     let keypair = HostKeyPair::generate();
-    let nonce_mgr = Arc::new(NonceManager::new(Duration::from_secs(config.nonce_ttl_secs)));
+    let nonce_mgr = Arc::new(NonceManager::new(Duration::from_secs(
+        config.nonce_ttl_secs,
+    )));
     let initial_nonce = nonce_mgr.generate_nonce();
 
     let host_pubkey_hex = keypair.public_key_hex();
@@ -98,12 +98,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     ));
 
     // 6. Initialize Smart Context Engine (Profiles, Matcher, Detector, Arbitrator)
-    let config_path = config
-        .config_file
-        .as_deref()
-        .unwrap_or("config.toml");
+    let config_path = config.config_file.as_deref().unwrap_or("config.toml");
 
-    let context_config = match lookaremote_host_daemon::context::ContextConfig::from_file(config_path) {
+    let context_config = match lookaremote_host_daemon::context::ContextConfig::from_file(
+        config_path,
+    ) {
         Ok(cfg) => {
             info!(path = %config_path, profiles = cfg.profiles.len(), "Loaded Smart Context profile configuration");
             cfg
@@ -129,7 +128,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Arc::from(lookaremote_host_daemon::context::create_platform_window_detector());
 
     let context_arbitrator = Arc::new(tokio::sync::Mutex::new(
-        lookaremote_host_daemon::context::ContextArbitrator::new(context_config.daemon.default_mode),
+        lookaremote_host_daemon::context::ContextArbitrator::new(
+            context_config.daemon.default_mode,
+        ),
     ));
 
     let context_watcher = Arc::new(lookaremote_host_daemon::context::ContextWatcher::new(
@@ -152,7 +153,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let watchdog_router = Arc::clone(&input_router);
     let watchdog_arb = Arc::clone(&context_arbitrator);
     let _watchdog_handle = watchdog.spawn_monitor(move || {
-        warn!("EMERGENCY RELEASE: Dead-Man switch fired! Neutralizing all virtual controller inputs.");
+        warn!(
+            "EMERGENCY RELEASE: Dead-Man switch fired! Neutralizing all virtual controller inputs."
+        );
         if let Err(err) = watchdog_router.neutralize() {
             warn!("Failed to neutralize inputs on watchdog alert: {err}");
         }
@@ -206,7 +209,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 12. Start Axum TCP Listener
     let bind_socket = SocketAddr::new(host_ip, config.port);
     info!("Starting signaling server on http://{}", bind_socket);
-    info!("Local QR Code page available at http://{}:{}/qr", host_ip, config.port);
+    info!(
+        "Local QR Code page available at http://{}:{}/qr",
+        host_ip, config.port
+    );
 
     let listener = tokio::net::TcpListener::bind(bind_socket).await?;
 

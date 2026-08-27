@@ -1,7 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use lookaremote_protocol::{
-    decode_packet, encode_packet, Header, HeaderFlags, MessageType, Packet, Payload,
-    messages::*,
+    decode_packet, encode_packet, messages::*, Header, HeaderFlags, MessageType, Packet, Payload,
 };
 
 fn bench_protocol_encode(c: &mut Criterion) {

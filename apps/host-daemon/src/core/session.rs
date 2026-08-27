@@ -50,11 +50,7 @@ pub struct Session {
 
 impl Session {
     /// Creates a new active session after successful handshake.
-    pub fn new(
-        session_id: String,
-        client_pubkey: [u8; 32],
-        shared_secret: [u8; 32],
-    ) -> Self {
+    pub fn new(session_id: String, client_pubkey: [u8; 32], shared_secret: [u8; 32]) -> Self {
         Self {
             session_id,
             client_pubkey,

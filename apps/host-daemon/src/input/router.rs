@@ -2,7 +2,9 @@
 
 use crate::drivers::keyboard_driver::create_platform_keyboard_driver;
 use crate::drivers::mouse_driver::create_platform_mouse_driver;
-use crate::drivers::{DriverError, VirtualGamepadDriver, VirtualKeyboardDriver, VirtualMouseDriver};
+use crate::drivers::{
+    DriverError, VirtualGamepadDriver, VirtualKeyboardDriver, VirtualMouseDriver,
+};
 use crate::input::events::InputEvent;
 use crate::input::motion_processor::{MotionAimMode, MotionProcessor};
 use lookaremote_protocol::messages::GamepadFullMessage;
@@ -69,14 +71,7 @@ impl InputRouter {
         let p3 = crate::drivers::create_platform_driver_for_slot(2);
         let p4 = crate::drivers::create_platform_driver_for_slot(3);
 
-        Self::with_multi_gamepad_drivers(
-            gamepad_driver,
-            p2,
-            p3,
-            p4,
-            mouse_driver,
-            keyboard_driver,
-        )
+        Self::with_multi_gamepad_drivers(gamepad_driver, p2, p3, p4, mouse_driver, keyboard_driver)
     }
 
     /// Creates a new InputRouter with all 4 isolated player gamepad drivers explicitly provided.
@@ -184,9 +179,9 @@ impl InputRouter {
                     *state = Some(updated_msg);
                 }
 
-                let mut driver = self.gamepad_drivers[slot_idx]
-                    .lock()
-                    .map_err(|_| DriverError::Internal("Failed to acquire gamepad driver lock".into()))?;
+                let mut driver = self.gamepad_drivers[slot_idx].lock().map_err(|_| {
+                    DriverError::Internal("Failed to acquire gamepad driver lock".into())
+                })?;
                 driver.update_gamepad(&updated_msg)?;
             }
 
@@ -198,19 +193,17 @@ impl InputRouter {
                     "Routing Motion event in router"
                 );
 
-                let mut proc = self
-                    .motion_processor
-                    .lock()
-                    .map_err(|_| DriverError::Internal("Failed to acquire motion processor lock".into()))?;
+                let mut proc = self.motion_processor.lock().map_err(|_| {
+                    DriverError::Internal("Failed to acquire motion processor lock".into())
+                })?;
 
                 match proc.config().mode {
                     MotionAimMode::Mouse => {
                         let (dx, dy) = proc.process_motion_to_mouse(m);
                         if dx != 0 || dy != 0 {
-                            let mut mouse = self
-                                .mouse_driver
-                                .lock()
-                                .map_err(|_| DriverError::Internal("Failed to acquire mouse driver lock".into()))?;
+                            let mut mouse = self.mouse_driver.lock().map_err(|_| {
+                                DriverError::Internal("Failed to acquire mouse driver lock".into())
+                            })?;
                             mouse.move_relative(dx, dy)?;
                         }
                     }
@@ -228,9 +221,9 @@ impl InputRouter {
                         updated_msg.stick_rx = new_rx;
                         updated_msg.stick_ry = new_ry;
 
-                        let mut driver = self.gamepad_drivers[0]
-                            .lock()
-                            .map_err(|_| DriverError::Internal("Failed to acquire gamepad driver lock".into()))?;
+                        let mut driver = self.gamepad_drivers[0].lock().map_err(|_| {
+                            DriverError::Internal("Failed to acquire gamepad driver lock".into())
+                        })?;
                         driver.update_gamepad(&updated_msg)?;
                     }
 
@@ -247,10 +240,9 @@ impl InputRouter {
                     buttons = t.buttons_mask,
                     "Routing Touchpad event to mouse driver"
                 );
-                let mut mouse = self
-                    .mouse_driver
-                    .lock()
-                    .map_err(|_| DriverError::Internal("Failed to acquire mouse driver lock".into()))?;
+                let mut mouse = self.mouse_driver.lock().map_err(|_| {
+                    DriverError::Internal("Failed to acquire mouse driver lock".into())
+                })?;
 
                 if t.dx != 0 || t.dy != 0 {
                     mouse.move_relative(t.dx as i32, t.dy as i32)?;
@@ -260,10 +252,9 @@ impl InputRouter {
                 }
 
                 // Handle button transitions & tap clicks
-                let mut last_buttons = self
-                    .last_touchpad_buttons
-                    .lock()
-                    .map_err(|_| DriverError::Internal("Failed to acquire touchpad buttons lock".into()))?;
+                let mut last_buttons = self.last_touchpad_buttons.lock().map_err(|_| {
+                    DriverError::Internal("Failed to acquire touchpad buttons lock".into())
+                })?;
 
                 // Check Left (0x01), Right (0x02), Middle (0x04) button state transitions
                 for &bit in &[0x01u8, 0x02u8, 0x04u8] {
@@ -293,10 +284,9 @@ impl InputRouter {
                     modifiers = k.modifiers,
                     "Routing Keyboard event to virtual keyboard driver"
                 );
-                let mut keyboard = self
-                    .keyboard_driver
-                    .lock()
-                    .map_err(|_| DriverError::Internal("Failed to acquire keyboard driver lock".into()))?;
+                let mut keyboard = self.keyboard_driver.lock().map_err(|_| {
+                    DriverError::Internal("Failed to acquire keyboard driver lock".into())
+                })?;
                 keyboard.key_event(k.key_code, k.state, k.modifiers)?;
             }
 
@@ -305,10 +295,9 @@ impl InputRouter {
                     action = m.media_action,
                     "Routing Media event to virtual keyboard driver"
                 );
-                let mut keyboard = self
-                    .keyboard_driver
-                    .lock()
-                    .map_err(|_| DriverError::Internal("Failed to acquire keyboard driver lock".into()))?;
+                let mut keyboard = self.keyboard_driver.lock().map_err(|_| {
+                    DriverError::Internal("Failed to acquire keyboard driver lock".into())
+                })?;
                 keyboard.media_action(m.media_action)?;
             }
 
@@ -347,25 +336,35 @@ impl InputRouter {
                 if let Ok(mut keyboard) = self.keyboard_driver.lock() {
                     match cmd.command_code {
                         lookaremote_protocol::messages::tv_commands::VOLUME_UP => {
-                            let _ = keyboard.media_action(lookaremote_protocol::messages::media::actions::VOL_UP);
+                            let _ = keyboard.media_action(
+                                lookaremote_protocol::messages::media::actions::VOL_UP,
+                            );
                         }
                         lookaremote_protocol::messages::tv_commands::VOLUME_DOWN => {
-                            let _ = keyboard.media_action(lookaremote_protocol::messages::media::actions::VOL_DOWN);
+                            let _ = keyboard.media_action(
+                                lookaremote_protocol::messages::media::actions::VOL_DOWN,
+                            );
                         }
                         lookaremote_protocol::messages::tv_commands::MUTE => {
-                            let _ = keyboard.media_action(lookaremote_protocol::messages::media::actions::MUTE);
+                            let _ = keyboard
+                                .media_action(lookaremote_protocol::messages::media::actions::MUTE);
                         }
                         lookaremote_protocol::messages::tv_commands::MEDIA_PLAY_PAUSE => {
-                            let _ = keyboard.media_action(lookaremote_protocol::messages::media::actions::PLAY_PAUSE);
+                            let _ = keyboard.media_action(
+                                lookaremote_protocol::messages::media::actions::PLAY_PAUSE,
+                            );
                         }
                         lookaremote_protocol::messages::tv_commands::MEDIA_STOP => {
-                            let _ = keyboard.media_action(lookaremote_protocol::messages::media::actions::STOP);
+                            let _ = keyboard
+                                .media_action(lookaremote_protocol::messages::media::actions::STOP);
                         }
                         lookaremote_protocol::messages::tv_commands::MEDIA_FAST_FORWARD => {
-                            let _ = keyboard.media_action(lookaremote_protocol::messages::media::actions::NEXT);
+                            let _ = keyboard
+                                .media_action(lookaremote_protocol::messages::media::actions::NEXT);
                         }
                         lookaremote_protocol::messages::tv_commands::MEDIA_REWIND => {
-                            let _ = keyboard.media_action(lookaremote_protocol::messages::media::actions::PREV);
+                            let _ = keyboard
+                                .media_action(lookaremote_protocol::messages::media::actions::PREV);
                         }
                         _ => {}
                     }
@@ -373,10 +372,7 @@ impl InputRouter {
             }
 
             InputEvent::TvTextInput(txt) => {
-                trace!(
-                    text = txt.as_str(),
-                    "Routing TvTextInput in InputRouter"
-                );
+                trace!(text = txt.as_str(), "Routing TvTextInput in InputRouter");
                 if let Ok(dispatcher) = self.tv_dispatcher.lock() {
                     let _ = dispatcher.dispatch_text_input(txt);
                 }

@@ -77,7 +77,15 @@ pub fn configure_data_channel_with_context(
     event_tx: Option<mpsc::Sender<InputEvent>>,
     context_watcher: Option<Arc<crate::context::ContextWatcher>>,
 ) {
-    configure_data_channel_for_slot(0, data_channel, watchdog, event_tx, context_watcher, None, None);
+    configure_data_channel_for_slot(
+        0,
+        data_channel,
+        watchdog,
+        event_tx,
+        context_watcher,
+        None,
+        None,
+    );
 }
 
 /// Attaches listeners to a DataChannel for a specific player slot (0..3) with slot assignment dispatch,
@@ -98,7 +106,12 @@ pub fn configure_data_channel_for_slot(
     let mp_for_open = multi_peer.clone();
 
     data_channel.on_open(Box::new(move || {
-        info!(slot = slot, "WebRTC DataChannel '{}' OPENED for Player Slot {}", label, slot + 1);
+        info!(
+            slot = slot,
+            "WebRTC DataChannel '{}' OPENED for Player Slot {}",
+            label,
+            slot + 1
+        );
         wd_for_open.arm();
 
         if let Some(ref mp_lock) = mp_for_open {
@@ -137,7 +150,11 @@ pub fn configure_data_channel_for_slot(
     let router_for_close = input_router.clone();
 
     data_channel.on_close(Box::new(move || {
-        warn!(slot = slot, "WebRTC DataChannel CLOSED for Player Slot {}", slot + 1);
+        warn!(
+            slot = slot,
+            "WebRTC DataChannel CLOSED for Player Slot {}",
+            slot + 1
+        );
         wd_for_close.disarm();
 
         if let Some(ref mp_lock) = mp_for_close {
@@ -164,7 +181,13 @@ pub fn configure_data_channel_for_slot(
         if msg.is_string {
             debug!("Received unexpected text message on DataChannel");
         } else {
-            let _ = handle_raw_slot_packet(slot, &msg.data, &wd_for_msg, event_tx.as_ref(), mp_for_msg.as_ref());
+            let _ = handle_raw_slot_packet(
+                slot,
+                &msg.data,
+                &wd_for_msg,
+                event_tx.as_ref(),
+                mp_for_msg.as_ref(),
+            );
         }
         Box::pin(async {})
     }));
@@ -207,7 +230,15 @@ pub fn setup_incoming_data_channel_listener_with_context(
     event_tx: Option<mpsc::Sender<InputEvent>>,
     context_watcher: Option<Arc<crate::context::ContextWatcher>>,
 ) {
-    setup_incoming_data_channel_listener_for_slot(0, peer_connection, watchdog, event_tx, context_watcher, None, None);
+    setup_incoming_data_channel_listener_for_slot(
+        0,
+        peer_connection,
+        watchdog,
+        event_tx,
+        context_watcher,
+        None,
+        None,
+    );
 }
 
 /// Binds DataChannel listener on an RTCPeerConnection for a specific player slot.
@@ -221,7 +252,12 @@ pub fn setup_incoming_data_channel_listener_for_slot(
     input_router: Option<Arc<InputRouter>>,
 ) {
     peer_connection.on_data_channel(Box::new(move |dc: Arc<RTCDataChannel>| {
-        info!(slot = slot, "Received incoming remote DataChannel: '{}' for Player Slot {}", dc.label(), slot + 1);
+        info!(
+            slot = slot,
+            "Received incoming remote DataChannel: '{}' for Player Slot {}",
+            dc.label(),
+            slot + 1
+        );
         let wd = Arc::clone(&watchdog);
         let tx = event_tx.clone();
         let cw = context_watcher.clone();
@@ -237,11 +273,13 @@ pub fn setup_peer_connection_logging(
     peer_connection: &Arc<RTCPeerConnection>,
     watchdog: Arc<DeadManWatchdog>,
 ) {
-    peer_connection.on_peer_connection_state_change(Box::new(move |state: RTCPeerConnectionState| {
-        info!("WebRTC PeerConnection state changed to: {state}");
-        if state == RTCPeerConnectionState::Failed || state == RTCPeerConnectionState::Closed {
-            watchdog.disarm();
-        }
-        Box::pin(async {})
-    }));
+    peer_connection.on_peer_connection_state_change(Box::new(
+        move |state: RTCPeerConnectionState| {
+            info!("WebRTC PeerConnection state changed to: {state}");
+            if state == RTCPeerConnectionState::Failed || state == RTCPeerConnectionState::Closed {
+                watchdog.disarm();
+            }
+            Box::pin(async {})
+        },
+    ));
 }

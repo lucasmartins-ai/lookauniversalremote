@@ -98,7 +98,8 @@ impl ContextArbitrator {
     ) -> ArbitrationResult {
         // Priority 1: Emergency Kill
         if self.emergency_active {
-            let changed = self.current_mode != default_mode || self.last_source != ArbitrationSource::Emergency;
+            let changed = self.current_mode != default_mode
+                || self.last_source != ArbitrationSource::Emergency;
             self.current_mode = default_mode;
             self.last_source = ArbitrationSource::Emergency;
             self.last_matched_profile = None;

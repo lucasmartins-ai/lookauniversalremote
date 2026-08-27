@@ -59,12 +59,17 @@ impl TvDispatcher {
 
     /// Get the current target Smart TV IP address.
     pub fn get_tv_ip(&self) -> String {
-        self.tv_ip.read().map(|s| s.clone()).unwrap_or_else(|_| "192.168.1.102".to_string())
+        self.tv_ip
+            .read()
+            .map(|s| s.clone())
+            .unwrap_or_else(|_| "192.168.1.102".to_string())
     }
 
     /// Dispatch a TV command message to the specified target TV device over the local network.
     pub fn dispatch_command(&self, msg: &TvCommandMessage) -> Result<String, String> {
-        self.stats.commands_dispatched.fetch_add(1, Ordering::Relaxed);
+        self.stats
+            .commands_dispatched
+            .fetch_add(1, Ordering::Relaxed);
         let tv_ip = self.get_tv_ip();
 
         match msg.target_device {
@@ -77,7 +82,8 @@ impl TvDispatcher {
                     if tokio::runtime::Handle::try_current().is_ok() {
                         tokio::spawn(async move {
                             // 1. Try sending via Google Cast HTTP Remote endpoint (port 8008 / 8009)
-                            let cast_endpoint = format!("http://{}:8008/setup/app_command", ip_clone);
+                            let cast_endpoint =
+                                format!("http://{}:8008/setup/app_command", ip_clone);
                             let _ = client
                                 .post(&cast_endpoint)
                                 .json(&serde_json::json!({ "keycode": keycode, "action": "click" }))
@@ -85,7 +91,9 @@ impl TvDispatcher {
                                 .await;
 
                             // 2. Try raw TCP ADB / Remote command on standard ports
-                            if let Ok(mut stream) = tokio::net::TcpStream::connect(format!("{}:5555", ip_clone)).await {
+                            if let Ok(mut stream) =
+                                tokio::net::TcpStream::connect(format!("{}:5555", ip_clone)).await
+                            {
                                 use tokio::io::AsyncWriteExt;
                                 let raw_adb_cmd = format!("shell:input keyevent {}\n", keycode);
                                 let _ = stream.write_all(raw_adb_cmd.as_bytes()).await;
@@ -97,7 +105,10 @@ impl TvDispatcher {
 
                     Ok(cmd_str)
                 } else {
-                    Err(format!("Unsupported Android TV command: {}", msg.command_code))
+                    Err(format!(
+                        "Unsupported Android TV command: {}",
+                        msg.command_code
+                    ))
                 }
             }
 
@@ -113,7 +124,9 @@ impl TvDispatcher {
                     if tokio::runtime::Handle::try_current().is_ok() {
                         tokio::spawn(async move {
                             let ws_url = format!("ws://{}:8001/api/v2/channels/samsung.remote.control?name=TG9va0FSZW1vdGU=", ip_clone);
-                            if let Ok((mut ws_stream, _)) = tokio_tungstenite::connect_async(&ws_url).await {
+                            if let Ok((mut ws_stream, _)) =
+                                tokio_tungstenite::connect_async(&ws_url).await
+                            {
                                 use futures_util::SinkExt;
                                 use tokio_tungstenite::tungstenite::Message;
                                 let msg = format!(
@@ -127,7 +140,10 @@ impl TvDispatcher {
 
                     Ok(payload)
                 } else {
-                    Err(format!("Unsupported Samsung TV command: {}", msg.command_code))
+                    Err(format!(
+                        "Unsupported Samsung TV command: {}",
+                        msg.command_code
+                    ))
                 }
             }
 
@@ -143,7 +159,9 @@ impl TvDispatcher {
                     if tokio::runtime::Handle::try_current().is_ok() {
                         tokio::spawn(async move {
                             let ws_url = format!("ws://{}:3000", ip_clone);
-                            if let Ok((mut ws_stream, _)) = tokio_tungstenite::connect_async(&ws_url).await {
+                            if let Ok((mut ws_stream, _)) =
+                                tokio_tungstenite::connect_async(&ws_url).await
+                            {
                                 use futures_util::SinkExt;
                                 use tokio_tungstenite::tungstenite::Message;
                                 let msg = format!(
@@ -157,7 +175,10 @@ impl TvDispatcher {
 
                     Ok(payload)
                 } else {
-                    Err(format!("Unsupported LG webOS TV command: {}", msg.command_code))
+                    Err(format!(
+                        "Unsupported LG webOS TV command: {}",
+                        msg.command_code
+                    ))
                 }
             }
 
@@ -179,7 +200,7 @@ impl TvDispatcher {
                 }
             }
 
-            SONY_BRAVIA | GENERIC_TV | DESKTOP_PC_MAC | _ => {
+            SONY_BRAVIA | GENERIC_TV | DESKTOP_PC_MAC | APPLE_TV | CONSOLE => {
                 let label = match msg.command_code {
                     tv_commands::POWER => "POWER",
                     tv_commands::HOME => "HOME",
@@ -194,12 +215,15 @@ impl TvDispatcher {
                 };
                 Ok(format!("FALLBACK_ACTION:{}", label))
             }
+            _ => Ok(format!("FALLBACK_ACTION:{}", msg.command_code)),
         }
     }
 
     /// Dispatch a TV text input string to search or input fields on the TV over network.
     pub fn dispatch_text_input(&self, msg: &TvTextInputMessage) -> Result<String, String> {
-        self.stats.text_inputs_dispatched.fetch_add(1, Ordering::Relaxed);
+        self.stats
+            .text_inputs_dispatched
+            .fetch_add(1, Ordering::Relaxed);
         let text = msg.as_str().to_string();
         let tv_ip = self.get_tv_ip();
         let client = self.http_client.clone();
@@ -207,13 +231,19 @@ impl TvDispatcher {
 
         if tokio::runtime::Handle::try_current().is_ok() {
             tokio::spawn(async move {
-                if let Ok(mut stream) = tokio::net::TcpStream::connect(format!("{}:5555", tv_ip)).await {
+                if let Ok(mut stream) =
+                    tokio::net::TcpStream::connect(format!("{}:5555", tv_ip)).await
+                {
                     use tokio::io::AsyncWriteExt;
                     let raw_text_cmd = format!("shell:input text '{}'\n", text_clone);
                     let _ = stream.write_all(raw_text_cmd.as_bytes()).await;
                 }
 
-                let roku_text_endpoint = format!("http://{}:8060/input?text={}", tv_ip, urlencoding_simple(&text_clone));
+                let roku_text_endpoint = format!(
+                    "http://{}:8060/input?text={}",
+                    tv_ip,
+                    urlencoding_simple(&text_clone)
+                );
                 let _ = client.post(&roku_text_endpoint).send().await;
             });
         }

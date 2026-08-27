@@ -42,14 +42,13 @@ export const AirMouseView: React.FC<AirMouseViewProps> = ({
   const [isDragLocked, setIsDragLocked] = useState(false);
   const [isLeftPressed, setIsLeftPressed] = useState(false);
   const [isRightPressed, setIsRightPressed] = useState(false);
-  const [cursorPos, setCursorPos] = useState({ x: 50, y: 50 }); // normalized percentage 0..100
+  const [cursorPos, setCursorPos] = useState({ x: 50, y: 50 });
   const [sensitivity] = useState(1.2);
 
   const imuPipelineRef = useRef<ImuSensorPipeline | null>(null);
   const filterRef = useRef<MotionFilters | null>(null);
   const animationFrameRef = useRef<number | null>(null);
 
-  // Initialize IMU pipeline for Gyro Aiming / Air Mouse
   useEffect(() => {
     const pipeline = new ImuSensorPipeline();
     const filter = new MotionFilters({
@@ -68,7 +67,6 @@ export const AirMouseView: React.FC<AirMouseViewProps> = ({
 
       const filtered = filter.processSample(frame);
 
-      // Stream binary motion packet over WebRTC DataChannel (120Hz)
       bridge.sendMotion({
         gyroYaw: Math.round(filtered.aimYaw * 1000),
         gyroPitch: Math.round(filtered.aimPitch * 1000),
@@ -79,7 +77,6 @@ export const AirMouseView: React.FC<AirMouseViewProps> = ({
         timestampUs: frame.timestampUs,
       });
 
-      // Update virtual on-screen cursor position for interactive HUD feedback
       setCursorPos((prev) => ({
         x: Math.max(5, Math.min(95, prev.x - filtered.aimYaw * sensitivity * 12)),
         y: Math.max(5, Math.min(95, prev.y - filtered.aimPitch * sensitivity * 12)),
@@ -108,7 +105,7 @@ export const AirMouseView: React.FC<AirMouseViewProps> = ({
       dy: 0,
       scrollV: 0,
       scrollH: 0,
-      buttonsMask: 0x01, // Left Click down
+      buttonsMask: 0x01,
     });
   };
 
@@ -120,7 +117,7 @@ export const AirMouseView: React.FC<AirMouseViewProps> = ({
         dy: 0,
         scrollV: 0,
         scrollH: 0,
-        buttonsMask: 0x00, // Left Click release
+        buttonsMask: 0x00,
       });
     }
   };
@@ -133,7 +130,7 @@ export const AirMouseView: React.FC<AirMouseViewProps> = ({
       dy: 0,
       scrollV: 0,
       scrollH: 0,
-      buttonsMask: 0x02, // Right Click
+      buttonsMask: 0x02,
     });
 
     setTimeout(() => {
@@ -245,15 +242,15 @@ export const AirMouseView: React.FC<AirMouseViewProps> = ({
         </div>
       </div>
 
-      {/* AIR MOUSE MAGIC POINTER CANVAS */}
+      {/* 3D AIR MOUSE RADAR SCOPE CANVAS */}
       <div
+        className="neo-sunken-deep"
         style={{
           flex: 1,
           margin: '6px 0',
-          borderRadius: '16px',
-          backgroundColor: '#04070b',
-          border: '1.5px solid var(--color-neon-pink)',
-          boxShadow: 'inset 0 0 35px rgba(255, 0, 127, 0.1), 0 0 15px rgba(255, 0, 127, 0.15)',
+          borderRadius: '20px',
+          border: '2px solid rgba(255, 0, 127, 0.4)',
+          boxShadow: 'inset 0 0 40px rgba(255, 0, 127, 0.12), 0 0 20px rgba(255, 0, 127, 0.15)',
           display: 'flex',
           flexDirection: 'column',
           position: 'relative',
@@ -279,11 +276,11 @@ export const AirMouseView: React.FC<AirMouseViewProps> = ({
         >
           <div
             style={{
-              width: '40px',
-              height: '40px',
+              width: '44px',
+              height: '44px',
               borderRadius: '50%',
-              border: '2px solid var(--color-neon-pink)',
-              boxShadow: '0 0 16px var(--color-neon-pink)',
+              border: '2.5px solid var(--color-neon-pink)',
+              boxShadow: '0 0 20px var(--color-neon-pink), inset 0 0 10px var(--color-neon-pink)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -295,7 +292,7 @@ export const AirMouseView: React.FC<AirMouseViewProps> = ({
                 height: '8px',
                 borderRadius: '50%',
                 backgroundColor: '#ffffff',
-                boxShadow: '0 0 8px #ffffff',
+                boxShadow: '0 0 10px #ffffff',
               }}
             />
           </div>
@@ -313,11 +310,13 @@ export const AirMouseView: React.FC<AirMouseViewProps> = ({
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Sparkles size={18} color="var(--color-neon-pink)" />
             <span
+              className="retro-embossed-text"
               style={{
                 fontFamily: 'var(--font-mono)',
                 fontSize: '0.8rem',
-                fontWeight: 700,
+                fontWeight: 800,
                 color: 'var(--color-neon-pink)',
+                letterSpacing: '0.08em',
               }}
             >
               MAGIC POINTER (GIROSCÓPIO 120HZ)
@@ -331,16 +330,19 @@ export const AirMouseView: React.FC<AirMouseViewProps> = ({
               haptics.buttonClick();
               setIsPointerActive(!isPointerActive);
             }}
+            className="lookaremote-btn retro-btn"
             style={{
-              padding: '4px 10px',
+              padding: '6px 14px',
               borderRadius: '12px',
-              backgroundColor: isPointerActive ? 'rgba(0, 229, 255, 0.15)' : 'rgba(255, 23, 68, 0.15)',
-              border: `1px solid ${isPointerActive ? 'var(--color-neon-cyan)' : 'var(--color-neon-red)'}`,
-              color: isPointerActive ? 'var(--color-neon-cyan)' : 'var(--color-neon-red)',
-              fontSize: '0.7rem',
+              background: isPointerActive
+                ? 'linear-gradient(180deg, #00f0ff 0%, #008ba3 100%)'
+                : 'linear-gradient(180deg, #ff3366 0%, #9e0c29 100%)',
+              border: `1px solid ${isPointerActive ? '#00f0ff' : '#ff3366'}`,
+              color: isPointerActive ? '#040d1a' : '#ffffff',
+              fontSize: '0.72rem',
               fontFamily: 'var(--font-mono)',
-              fontWeight: 700,
-              cursor: 'pointer',
+              fontWeight: 800,
+              boxShadow: isPointerActive ? 'var(--neo-shadow-button-cyan)' : 'var(--neo-shadow-button-red)',
             }}
           >
             {isPointerActive ? 'ATIVO' : 'PAUSADO'}
@@ -359,29 +361,28 @@ export const AirMouseView: React.FC<AirMouseViewProps> = ({
           <button
             type="button"
             onClick={handleCenter}
+            className="lookaremote-btn retro-btn"
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              padding: '12px 24px',
-              borderRadius: '24px',
-              backgroundColor: 'rgba(255, 0, 127, 0.2)',
-              border: '2px solid var(--color-neon-pink)',
+              padding: '12px 26px',
+              borderRadius: '26px',
+              background: 'linear-gradient(180deg, #ff007f 0%, #a60053 100%)',
+              border: '2px solid #ff007f',
               color: '#ffffff',
-              fontFamily: 'var(--font-mono)',
-              fontSize: '0.85rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              boxShadow: '0 0 20px rgba(255, 0, 127, 0.4)',
-              transition: 'all var(--transition-fast)',
+              fontFamily: 'var(--font-display)',
+              fontSize: '0.95rem',
+              fontWeight: 900,
+              boxShadow: '0 4px 0 #59002c, 0 8px 20px rgba(255, 0, 127, 0.4), inset 0 1px 2px rgba(255, 255, 255, 0.5)',
             }}
           >
-            <Crosshair size={18} color="var(--color-neon-pink)" />
+            <Crosshair size={20} color="#ffffff" />
             CENTRALIZAR APONTADOR
           </button>
         </div>
 
-        {/* Bottom Actions & Trigger buttons */}
+        {/* Bottom Actions & 3D Click Trigger */}
         <div
           style={{
             display: 'flex',
@@ -390,32 +391,36 @@ export const AirMouseView: React.FC<AirMouseViewProps> = ({
             zIndex: 10,
           }}
         >
-          {/* Large Main Trigger (Left Click / Drag) */}
+          {/* Large 3D Main Trigger (Left Click / Drag) */}
           <button
             type="button"
             onPointerDown={handleLeftDown}
             onPointerUp={handleLeftUp}
             onPointerCancel={handleLeftUp}
+            className="lookaremote-btn retro-btn"
             style={{
               flex: 2,
-              height: '80px',
+              height: '76px',
               borderRadius: '16px',
-              backgroundColor: isLeftPressed ? 'rgba(0, 229, 255, 0.3)' : 'var(--color-surface-card)',
-              border: `2px solid ${isLeftPressed ? 'var(--color-neon-cyan)' : 'var(--color-border-subtle)'}`,
-              color: 'var(--color-text-primary)',
-              fontFamily: 'var(--font-mono)',
-              fontSize: '1rem',
-              fontWeight: 800,
+              background: isLeftPressed
+                ? 'linear-gradient(180deg, #008ba3 0%, #00e5ff 100%)'
+                : 'linear-gradient(180deg, #222d42 0%, #161e2e 100%)',
+              border: `2px solid ${isLeftPressed ? '#00f0ff' : 'rgba(255, 255, 255, 0.15)'}`,
+              color: isLeftPressed ? '#040d1a' : 'var(--color-text-primary)',
+              fontFamily: 'var(--font-display)',
+              fontSize: '1.05rem',
+              fontWeight: 900,
+              letterSpacing: '0.06em',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: '8px',
-              cursor: 'pointer',
-              boxShadow: isLeftPressed ? '0 0 20px var(--color-neon-cyan)' : 'none',
-              touchAction: 'none',
+              boxShadow: isLeftPressed
+                ? 'var(--neo-shadow-button-cyan-pressed)'
+                : 'var(--neo-shadow-button-slate)',
             }}
           >
-            <MousePointer size={22} color="var(--color-neon-cyan)" />
+            <MousePointer size={24} color={isLeftPressed ? '#040d1a' : 'var(--color-neon-cyan)'} />
             GATILHO / CLIQUE
           </button>
 
@@ -423,25 +428,30 @@ export const AirMouseView: React.FC<AirMouseViewProps> = ({
           <button
             type="button"
             onClick={handleRightClick}
+            className="lookaremote-btn retro-btn"
             style={{
               flex: 1,
-              height: '80px',
+              height: '76px',
               borderRadius: '16px',
-              backgroundColor: isRightPressed ? 'rgba(255, 255, 255, 0.2)' : 'var(--color-surface-card)',
-              border: '1px solid var(--color-border-subtle)',
+              background: isRightPressed
+                ? 'linear-gradient(180deg, #111722 0%, #161e2e 100%)'
+                : 'linear-gradient(180deg, #222d42 0%, #161e2e 100%)',
+              border: '1.5px solid rgba(255, 255, 255, 0.15)',
               color: 'var(--color-text-secondary)',
-              fontFamily: 'var(--font-mono)',
-              fontSize: '0.8rem',
-              fontWeight: 700,
+              fontFamily: 'var(--font-display)',
+              fontSize: '0.85rem',
+              fontWeight: 800,
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
               gap: '4px',
-              cursor: 'pointer',
+              boxShadow: isRightPressed
+                ? 'var(--neo-shadow-button-slate-pressed)'
+                : 'var(--neo-shadow-button-slate)',
             }}
           >
-            <RotateCcw size={18} />
+            <RotateCcw size={20} />
             VOLTAR
           </button>
 
@@ -459,25 +469,30 @@ export const AirMouseView: React.FC<AirMouseViewProps> = ({
                 bridge.sendTouchpad({ dx: 0, dy: 0, scrollV: 0, scrollH: 0, buttonsMask: 0x01 });
               }
             }}
+            className="lookaremote-btn retro-btn"
             style={{
-              width: '60px',
-              height: '80px',
+              width: '68px',
+              height: '76px',
               borderRadius: '16px',
-              backgroundColor: isDragLocked ? 'rgba(255, 230, 0, 0.2)' : 'var(--color-surface-card)',
-              border: `1px solid ${isDragLocked ? 'var(--color-neon-yellow)' : 'var(--color-border-subtle)'}`,
-              color: isDragLocked ? 'var(--color-neon-yellow)' : 'var(--color-text-muted)',
-              fontFamily: 'var(--font-mono)',
-              fontSize: '0.7rem',
-              fontWeight: 700,
+              background: isDragLocked
+                ? 'linear-gradient(180deg, #ffc01e 0%, #b36b00 100%)'
+                : 'linear-gradient(180deg, #222d42 0%, #161e2e 100%)',
+              border: `1.5px solid ${isDragLocked ? '#ffc01e' : 'rgba(255, 255, 255, 0.15)'}`,
+              color: isDragLocked ? '#1a0e00' : 'var(--color-text-muted)',
+              fontFamily: 'var(--font-display)',
+              fontSize: '0.75rem',
+              fontWeight: 800,
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
               gap: '4px',
-              cursor: 'pointer',
+              boxShadow: isDragLocked
+                ? 'var(--neo-shadow-button-amber-pressed)'
+                : 'var(--neo-shadow-button-slate)',
             }}
           >
-            {isDragLocked ? <Lock size={18} /> : <Unlock size={18} />}
+            {isDragLocked ? <Lock size={20} /> : <Unlock size={20} />}
             TRAVA
           </button>
         </div>

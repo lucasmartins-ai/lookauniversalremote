@@ -163,7 +163,9 @@ impl MultiPeerSessionManager {
     ) -> Result<(u8, String), MultiPeerError> {
         // 1. If this exact client_pubkey is already registered in a slot, reuse it
         if let Some(existing_idx) = self.slots.iter().position(|s| {
-            s.as_ref().map(|slot| slot.client_pubkey == client_pubkey).unwrap_or(false)
+            s.as_ref()
+                .map(|slot| slot.client_pubkey == client_pubkey)
+                .unwrap_or(false)
         }) {
             let session_id = format!("{:016x}", rand::random::<u64>());
             let slot = PeerSlot::new(
@@ -180,20 +182,21 @@ impl MultiPeerSessionManager {
         // 2. Clean up any stale slots (Pairing state older than 10s, or inactive for > 30s)
         for s in self.slots.iter_mut() {
             if let Some(slot) = s {
-                if slot.state == SessionState::Pairing && slot.connected_at.elapsed().as_secs() > 10 {
-                    *s = None;
-                } else if slot.last_seen.elapsed().as_secs() > 30 {
+                let is_stale_pairing = slot.state == SessionState::Pairing
+                    && slot.connected_at.elapsed().as_secs() > 10;
+                let is_inactive = slot.last_seen.elapsed().as_secs() > 30;
+                if is_stale_pairing || is_inactive {
                     *s = None;
                 }
             }
         }
 
         // 3. Find first empty slot (0..3)
-        let free_slot_idx = self
-            .slots
-            .iter()
-            .position(|s| s.is_none())
-            .ok_or(MultiPeerError::MaxCapacityReached(MAX_PEERS))? as u8;
+        let free_slot_idx =
+            self.slots
+                .iter()
+                .position(|s| s.is_none())
+                .ok_or(MultiPeerError::MaxCapacityReached(MAX_PEERS))? as u8;
 
         let session_id = format!("{:016x}", rand::random::<u64>());
         let slot = PeerSlot::new(
@@ -293,10 +296,11 @@ impl MultiPeerSessionManager {
 
     /// Frees a slot by session ID.
     pub fn free_session(&mut self, session_id: &str) -> Option<PeerSlot> {
-        let idx = self
-            .slots
-            .iter()
-            .position(|s| s.as_ref().map(|slot| slot.session_id == session_id).unwrap_or(false))?;
+        let idx = self.slots.iter().position(|s| {
+            s.as_ref()
+                .map(|slot| slot.session_id == session_id)
+                .unwrap_or(false)
+        })?;
         self.slots[idx].take()
     }
 

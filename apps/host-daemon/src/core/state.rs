@@ -38,6 +38,10 @@ pub struct AppState {
     pub context_watcher: Option<Arc<ContextWatcher>>,
     /// Reference to global input router
     pub input_router: Option<Arc<InputRouter>>,
+    /// Smart TV discovery service
+    pub tv_discovery: Arc<crate::tv::discovery::TvDiscoveryService>,
+    /// Smart TV vendor adapter manager
+    pub tv_adapters: Arc<crate::tv::adapters::TvAdapterManager>,
 }
 
 impl AppState {
@@ -62,6 +66,21 @@ impl AppState {
         context_watcher: Option<Arc<ContextWatcher>>,
         input_router: Option<Arc<InputRouter>>,
     ) -> Self {
+        let registry = crate::tv::discovery::DeviceRegistry::new();
+        let tv_discovery = Arc::new(crate::tv::discovery::TvDiscoveryService::new(
+            registry.clone(),
+        ));
+        let tv_adapters = Arc::new(crate::tv::adapters::TvAdapterManager::new(registry));
+
+        // Register default vendor adapters
+        tv_adapters.register_adapter(Arc::new(crate::tv::adapters::SamsungTizenAdapter::new()));
+        tv_adapters.register_adapter(Arc::new(crate::tv::adapters::LgWebOsAdapter::new()));
+        tv_adapters.register_adapter(Arc::new(crate::tv::adapters::RokuAdapter::new()));
+        tv_adapters.register_adapter(Arc::new(crate::tv::adapters::AndroidGoogleTvAdapter::new()));
+        tv_adapters.register_adapter(Arc::new(crate::tv::adapters::SonyBraviaAdapter::new()));
+        tv_adapters.register_adapter(Arc::new(crate::tv::adapters::AppleTvAdapter::new()));
+        tv_adapters.register_adapter(Arc::new(crate::tv::adapters::GenericTvAdapter::new()));
+
         Self {
             config: Arc::new(config),
             keypair: Arc::new(keypair),
@@ -74,6 +93,8 @@ impl AppState {
             event_tx,
             context_watcher,
             input_router,
+            tv_discovery,
+            tv_adapters,
         }
     }
 }

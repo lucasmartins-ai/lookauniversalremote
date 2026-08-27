@@ -97,79 +97,82 @@ export const ManualPairView: React.FC<ManualPairViewProps> = ({ onPair, onCancel
     >
       <div style={{ textAlign: 'center' }}>
         <h3
+          className="retro-embossed-text"
           style={{
             fontFamily: 'var(--font-display)',
-            fontSize: '1.15rem',
-            fontWeight: 700,
+            fontSize: '1.25rem',
+            fontWeight: 900,
             color: 'var(--color-neon-cyan)',
-            letterSpacing: '0.05em',
+            letterSpacing: '0.06em',
             textTransform: 'uppercase',
             marginBottom: '4px',
           }}
         >
           Conexão Direta (Sem Câmera)
         </h3>
-        <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.8rem' }}>
+        <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.8rem', fontWeight: 600 }}>
           Conecte em 1 clique ou insira o IP do seu computador na rede Wi-Fi.
         </p>
       </div>
 
-      {/* 1-CLICK INSTANT LAN CONNECT BUTTON */}
+      {/* 1-CLICK INSTANT LAN CONNECT BOX (3D Raised Panel) */}
       <div
+        className="neo-raised"
         style={{
-          backgroundColor: 'rgba(0, 229, 255, 0.08)',
-          border: '1px solid var(--color-neon-cyan)',
-          borderRadius: '10px',
-          padding: '14px',
+          borderRadius: '14px',
+          padding: '16px',
           display: 'flex',
           flexDirection: 'column',
-          gap: '10px',
-          boxShadow: '0 0 16px rgba(0, 229, 255, 0.15)',
+          gap: '12px',
+          border: '1.5px solid rgba(0, 229, 255, 0.4)',
+          boxShadow: 'var(--neo-shadow-raised), 0 0 16px rgba(0, 229, 255, 0.15)',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-neon-cyan)', fontSize: '0.85rem', fontWeight: 600 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-neon-cyan)', fontSize: '0.9rem', fontWeight: 800, fontFamily: 'var(--font-display)', letterSpacing: '0.05em' }}>
           <Zap size={18} />
           <span>CONEXÃO RÁPIDA DE 1 CLIQUE</span>
         </div>
 
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '10px' }}>
           <div style={{ flex: 3 }}>
-            <label style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '3px' }}>IP DO HOST / PC</label>
+            <label style={{ fontSize: '0.72rem', fontFamily: 'var(--font-mono)', color: 'var(--color-text-muted)', display: 'block', marginBottom: '4px', fontWeight: 700 }}>IP DO HOST / PC</label>
             <input
               type="text"
               value={hostIp}
               onChange={(e) => setHostIp(e.target.value)}
               placeholder="192.168.1.105"
+              className="neo-sunken"
               style={{
                 width: '100%',
-                padding: '8px 10px',
-                borderRadius: '6px',
-                border: '1px solid var(--color-border-subtle)',
-                backgroundColor: 'var(--color-surface-base)',
+                padding: '10px 12px',
+                borderRadius: '8px',
                 color: '#fff',
                 fontFamily: 'var(--font-mono)',
-                fontSize: '0.85rem',
+                fontSize: '0.9rem',
+                fontWeight: 700,
                 outline: 'none',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
               }}
             />
           </div>
           <div style={{ flex: 1.5 }}>
-            <label style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '3px' }}>PORTA</label>
+            <label style={{ fontSize: '0.72rem', fontFamily: 'var(--font-mono)', color: 'var(--color-text-muted)', display: 'block', marginBottom: '4px', fontWeight: 700 }}>PORTA</label>
             <input
               type="text"
               value={hostPort}
               onChange={(e) => setHostPort(e.target.value)}
               placeholder="8765"
+              className="neo-sunken"
               style={{
                 width: '100%',
-                padding: '8px 10px',
-                borderRadius: '6px',
-                border: '1px solid var(--color-border-subtle)',
-                backgroundColor: 'var(--color-surface-base)',
+                padding: '10px 12px',
+                borderRadius: '8px',
                 color: '#fff',
                 fontFamily: 'var(--font-mono)',
-                fontSize: '0.85rem',
+                fontSize: '0.9rem',
+                fontWeight: 700,
                 outline: 'none',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
               }}
             />
           </div>
@@ -197,20 +200,21 @@ export const ManualPairView: React.FC<ManualPairViewProps> = ({ onPair, onCancel
             color: 'var(--color-neon-red)',
             fontSize: '0.8rem',
             fontFamily: 'var(--font-mono)',
-            backgroundColor: 'rgba(255, 23, 68, 0.1)',
-            padding: '8px 12px',
-            borderRadius: '6px',
-            border: '1px solid rgba(255, 23, 68, 0.3)',
+            fontWeight: 700,
+            backgroundColor: 'rgba(255, 42, 85, 0.15)',
+            padding: '10px 14px',
+            borderRadius: '10px',
+            border: '1.5px solid var(--color-neon-red)',
           }}
         >
-          <AlertCircle size={16} />
+          <AlertCircle size={18} />
           <span>{error}</span>
         </div>
       )}
 
       {/* ALTERNATIVE: PASTE FULL TOKEN / URL */}
       <details style={{ marginTop: '4px' }}>
-        <summary style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', cursor: 'pointer', outline: 'none' }}>
+        <summary style={{ fontSize: '0.75rem', fontFamily: 'var(--font-mono)', color: 'var(--color-text-muted)', cursor: 'pointer', outline: 'none', fontWeight: 600 }}>
           Ou cole a URL completa de pareamento com token...
         </summary>
         <form onSubmit={handleSubmitRaw} style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '8px' }}>
@@ -223,31 +227,31 @@ export const ManualPairView: React.FC<ManualPairViewProps> = ({ onPair, onCancel
               }}
               rows={3}
               placeholder="https://remote.lookaberry.com/connect#h=192.168.1.105&p=8765..."
+              className="neo-sunken"
               style={{
                 width: '100%',
-                backgroundColor: 'var(--color-surface-base)',
-                border: '1px solid var(--color-border-subtle)',
-                borderRadius: '8px',
+                borderRadius: '10px',
                 padding: '10px',
                 color: 'var(--color-text-primary)',
                 fontFamily: 'var(--font-mono)',
                 fontSize: '0.75rem',
                 resize: 'none',
                 outline: 'none',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
               }}
             />
             <Button
               type="button"
-              variant="ghost"
+              variant="secondary"
               size="sm"
               onClick={handlePaste}
               leftIcon={<Clipboard size={12} />}
-              style={{ position: 'absolute', top: '6px', right: '6px', fontSize: '0.7rem', padding: '3px 6px' }}
+              style={{ position: 'absolute', top: '8px', right: '8px', fontSize: '0.7rem', height: '28px', padding: '2px 8px' }}
             >
               COLAR
             </Button>
           </div>
-          <Button type="submit" variant="ghost" fullWidth size="sm" leftIcon={<Link2 size={14} />}>
+          <Button type="submit" variant="secondary" fullWidth size="sm" leftIcon={<Link2 size={14} />}>
             CONECTAR VIA TOKEN
           </Button>
         </form>

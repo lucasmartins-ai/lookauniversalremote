@@ -46,7 +46,6 @@ export const MediaRemoteView: React.FC<MediaRemoteViewProps> = ({
   const [isMuted, setIsMuted] = useState(false);
   const [activeAction, setActiveAction] = useState<number | null>(null);
 
-  // Interval timer for hold-to-repeat volume
   const repeatTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const sendMediaAction = (action: MediaActionValue) => {
@@ -63,7 +62,6 @@ export const MediaRemoteView: React.FC<MediaRemoteViewProps> = ({
     sendMediaAction(action);
     if (repeatTimerRef.current) clearInterval(repeatTimerRef.current);
 
-    // After initial 300ms hold delay, repeat every 100ms
     const timeout = setTimeout(() => {
       repeatTimerRef.current = setInterval(() => {
         haptics.lightTap();
@@ -165,8 +163,9 @@ export const MediaRemoteView: React.FC<MediaRemoteViewProps> = ({
         </div>
       </div>
 
-      {/* Main OLED Media Deck Surface */}
+      {/* Main 3D Hi-Fi Deck Surface */}
       <div
+        className="neo-sunken-deep"
         style={{
           flex: 1,
           margin: '12px 0',
@@ -174,84 +173,103 @@ export const MediaRemoteView: React.FC<MediaRemoteViewProps> = ({
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: '24px',
-          padding: '16px',
-          borderRadius: '16px',
-          backgroundColor: '#05080c',
-          border: '1px solid var(--color-border-accent)',
-          boxShadow: 'inset 0 0 30px rgba(0, 229, 255, 0.05)',
+          gap: '26px',
+          padding: '20px',
+          borderRadius: '20px',
+          position: 'relative',
         }}
       >
-        {/* Playback Controls (Prev, Play/Pause, Next) */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px' }}>
+        {/* Deck Header Badge */}
+        <div
+          className="retro-embossed-text"
+          style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: '0.75rem',
+            letterSpacing: '0.15em',
+            color: 'var(--color-neon-cyan)',
+            fontWeight: 800,
+            textTransform: 'uppercase',
+          }}
+        >
+          HI-FI AUDIO/VIDEO TRANSPORT DECK
+        </div>
+
+        {/* 3D Main Playback Controls (Prev, Play/Pause Dial, Next) */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '22px' }}>
           {/* Previous Track */}
           <button
             type="button"
             onClick={() => sendMediaAction(MediaAction.PREV)}
+            className="lookaremote-btn retro-btn"
             style={{
-              width: '56px',
-              height: '56px',
+              width: '60px',
+              height: '60px',
               borderRadius: '50%',
-              backgroundColor: 'var(--color-surface-card)',
-              border: '1px solid var(--color-border-subtle)',
+              background: 'linear-gradient(180deg, #222d42 0%, #161e2e 100%)',
+              border: '1.5px solid rgba(255, 255, 255, 0.15)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
               color: 'var(--color-text-primary)',
-              transition: 'all var(--transition-fast)',
-              boxShadow: activeAction === MediaAction.PREV ? '0 0 16px var(--color-neon-cyan)' : 'none',
+              boxShadow: activeAction === MediaAction.PREV
+                ? 'var(--neo-shadow-button-slate-pressed)'
+                : 'var(--neo-shadow-button-slate)',
             }}
           >
-            <SkipBack size={24} />
+            <SkipBack size={26} />
           </button>
 
-          {/* Large Main Play/Pause Button */}
+          {/* Large 3D Master Play/Pause Dial */}
           <button
             type="button"
             onClick={() => {
               setIsPlaying(!isPlaying);
               sendMediaAction(MediaAction.PLAY_PAUSE);
             }}
+            className="lookaremote-btn retro-btn"
             style={{
-              width: '84px',
-              height: '84px',
+              width: '92px',
+              height: '92px',
               borderRadius: '50%',
-              backgroundColor: 'rgba(0, 229, 255, 0.15)',
-              border: '2px solid var(--color-neon-cyan)',
+              background: 'linear-gradient(180deg, #00f0ff 0%, #00b4d8 50%, #007791 100%)',
+              border: '2.5px solid #00f0ff',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
-              color: 'var(--color-neon-cyan)',
-              boxShadow: '0 0 24px var(--color-neon-cyan-glow)',
-              transition: 'all var(--transition-fast)',
-              transform: activeAction === MediaAction.PLAY_PAUSE ? 'scale(0.95)' : 'scale(1)',
+              color: '#040d1a',
+              boxShadow: activeAction === MediaAction.PLAY_PAUSE
+                ? 'var(--neo-shadow-button-cyan-pressed)'
+                : 'var(--neo-shadow-button-cyan)',
+              transform: activeAction === MediaAction.PLAY_PAUSE ? 'translateY(4px) scale(0.96)' : 'none',
             }}
           >
-            {isPlaying ? <Pause size={36} /> : <Play size={36} style={{ marginLeft: '4px' }} />}
+            {isPlaying ? <Pause size={42} /> : <Play size={42} style={{ marginLeft: '6px' }} />}
           </button>
 
           {/* Next Track */}
           <button
             type="button"
             onClick={() => sendMediaAction(MediaAction.NEXT)}
+            className="lookaremote-btn retro-btn"
             style={{
-              width: '56px',
-              height: '56px',
+              width: '60px',
+              height: '60px',
               borderRadius: '50%',
-              backgroundColor: 'var(--color-surface-card)',
-              border: '1px solid var(--color-border-subtle)',
+              background: 'linear-gradient(180deg, #222d42 0%, #161e2e 100%)',
+              border: '1.5px solid rgba(255, 255, 255, 0.15)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
               color: 'var(--color-text-primary)',
-              transition: 'all var(--transition-fast)',
-              boxShadow: activeAction === MediaAction.NEXT ? '0 0 16px var(--color-neon-cyan)' : 'none',
+              boxShadow: activeAction === MediaAction.NEXT
+                ? 'var(--neo-shadow-button-slate-pressed)'
+                : 'var(--neo-shadow-button-slate)',
             }}
           >
-            <SkipForward size={24} />
+            <SkipForward size={26} />
           </button>
         </div>
 
@@ -263,33 +281,35 @@ export const MediaRemoteView: React.FC<MediaRemoteViewProps> = ({
               setIsPlaying(false);
               sendMediaAction(MediaAction.STOP);
             }}
+            className="lookaremote-btn retro-btn"
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '6px',
-              padding: '8px 18px',
-              borderRadius: '20px',
-              backgroundColor: 'var(--color-surface-card)',
-              border: '1px solid var(--color-border-subtle)',
-              color: 'var(--color-text-muted)',
+              gap: '8px',
+              padding: '10px 22px',
+              borderRadius: '24px',
+              background: 'linear-gradient(180deg, #222d42 0%, #161e2e 100%)',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              color: 'var(--color-text-secondary)',
               fontFamily: 'var(--font-mono)',
-              fontSize: '0.8rem',
-              fontWeight: 600,
+              fontSize: '0.85rem',
+              fontWeight: 800,
               cursor: 'pointer',
+              boxShadow: 'var(--neo-shadow-button-slate)',
             }}
           >
-            <Square size={14} /> STOP
+            <Square size={16} /> STOP
           </button>
         </div>
 
-        {/* Volume & Mute Section */}
+        {/* 3D Volume & Mute Section */}
         <div
           style={{
             display: 'grid',
             gridTemplateColumns: '1fr 1fr 1fr',
-            gap: '12px',
+            gap: '14px',
             width: '100%',
-            maxWidth: '340px',
+            maxWidth: '360px',
           }}
         >
           {/* Volume Down */}
@@ -298,6 +318,7 @@ export const MediaRemoteView: React.FC<MediaRemoteViewProps> = ({
             onPointerDown={() => startHoldRepeat(MediaAction.VOL_DOWN)}
             onPointerUp={stopHoldRepeat}
             onPointerCancel={stopHoldRepeat}
+            className="lookaremote-btn retro-btn"
             style={{
               display: 'flex',
               flexDirection: 'column',
@@ -305,18 +326,17 @@ export const MediaRemoteView: React.FC<MediaRemoteViewProps> = ({
               justifyContent: 'center',
               gap: '6px',
               padding: '16px 8px',
-              borderRadius: '12px',
-              backgroundColor: 'var(--color-surface-card)',
-              border: '1px solid var(--color-border-subtle)',
+              borderRadius: '14px',
+              background: 'linear-gradient(180deg, #222d42 0%, #161e2e 100%)',
+              border: '1.5px solid rgba(255, 255, 255, 0.15)',
               color: 'var(--color-text-primary)',
               fontFamily: 'var(--font-mono)',
-              fontSize: '0.8rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              touchAction: 'none',
+              fontSize: '0.85rem',
+              fontWeight: 800,
+              boxShadow: 'var(--neo-shadow-button-slate)',
             }}
           >
-            <Volume1 size={22} color="var(--color-neon-cyan)" />
+            <Volume1 size={24} color="var(--color-neon-cyan)" />
             VOL -
           </button>
 
@@ -327,6 +347,7 @@ export const MediaRemoteView: React.FC<MediaRemoteViewProps> = ({
               setIsMuted(!isMuted);
               sendMediaAction(MediaAction.MUTE);
             }}
+            className="lookaremote-btn retro-btn"
             style={{
               display: 'flex',
               flexDirection: 'column',
@@ -334,18 +355,21 @@ export const MediaRemoteView: React.FC<MediaRemoteViewProps> = ({
               justifyContent: 'center',
               gap: '6px',
               padding: '16px 8px',
-              borderRadius: '12px',
-              backgroundColor: isMuted ? 'rgba(255, 23, 68, 0.15)' : 'var(--color-surface-card)',
-              border: `1px solid ${isMuted ? 'var(--color-neon-red)' : 'var(--color-border-subtle)'}`,
-              boxShadow: isMuted ? '0 0 16px var(--color-neon-red-glow)' : 'none',
-              color: isMuted ? 'var(--color-neon-red)' : 'var(--color-text-secondary)',
+              borderRadius: '14px',
+              background: isMuted
+                ? 'linear-gradient(180deg, #ff3366 0%, #9e0c29 100%)'
+                : 'linear-gradient(180deg, #222d42 0%, #161e2e 100%)',
+              border: `1.5px solid ${isMuted ? '#ff3366' : 'rgba(255, 255, 255, 0.15)'}`,
+              boxShadow: isMuted
+                ? 'var(--neo-shadow-button-red)'
+                : 'var(--neo-shadow-button-slate)',
+              color: isMuted ? '#ffffff' : 'var(--color-text-secondary)',
               fontFamily: 'var(--font-mono)',
-              fontSize: '0.8rem',
-              fontWeight: 700,
-              cursor: 'pointer',
+              fontSize: '0.85rem',
+              fontWeight: 800,
             }}
           >
-            {isMuted ? <VolumeX size={22} /> : <Volume2 size={22} />}
+            {isMuted ? <VolumeX size={24} /> : <Volume2 size={24} />}
             {isMuted ? 'MUTED' : 'MUTE'}
           </button>
 
@@ -355,6 +379,7 @@ export const MediaRemoteView: React.FC<MediaRemoteViewProps> = ({
             onPointerDown={() => startHoldRepeat(MediaAction.VOL_UP)}
             onPointerUp={stopHoldRepeat}
             onPointerCancel={stopHoldRepeat}
+            className="lookaremote-btn retro-btn"
             style={{
               display: 'flex',
               flexDirection: 'column',
@@ -362,24 +387,23 @@ export const MediaRemoteView: React.FC<MediaRemoteViewProps> = ({
               justifyContent: 'center',
               gap: '6px',
               padding: '16px 8px',
-              borderRadius: '12px',
-              backgroundColor: 'var(--color-surface-card)',
-              border: '1px solid var(--color-border-subtle)',
+              borderRadius: '14px',
+              background: 'linear-gradient(180deg, #222d42 0%, #161e2e 100%)',
+              border: '1.5px solid rgba(255, 255, 255, 0.15)',
               color: 'var(--color-text-primary)',
               fontFamily: 'var(--font-mono)',
-              fontSize: '0.8rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              touchAction: 'none',
+              fontSize: '0.85rem',
+              fontWeight: 800,
+              boxShadow: 'var(--neo-shadow-button-slate)',
             }}
           >
-            <Volume2 size={22} color="var(--color-neon-cyan)" />
+            <Volume2 size={24} color="var(--color-neon-cyan)" />
             VOL +
           </button>
         </div>
       </div>
 
-      {/* Bottom Safety & Disconnect Bar */}
+      {/* Bottom Safety Bar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
         <Button
           variant="danger"

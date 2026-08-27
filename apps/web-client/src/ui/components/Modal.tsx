@@ -41,9 +41,9 @@ export const Modal: React.FC<ModalProps> = ({
         alignItems: 'center',
         justifyContent: 'center',
         padding: '16px',
-        backgroundColor: 'rgba(0, 0, 0, 0.85)',
-        backdropFilter: 'blur(8px)',
-        WebkitBackdropFilter: 'blur(8px)',
+        backgroundColor: 'rgba(2, 4, 8, 0.88)',
+        backdropFilter: 'blur(10px)',
+        WebkitBackdropFilter: 'blur(10px)',
       }}
       onClick={(e) => {
         if (e.target === e.currentTarget) {
@@ -52,57 +52,72 @@ export const Modal: React.FC<ModalProps> = ({
       }}
     >
       <div
+        className="neo-raised-lg"
         style={{
           width: '100%',
-          maxWidth: '460px',
-          backgroundColor: 'var(--color-surface-base)',
-          border: '1px solid var(--color-border-accent)',
-          borderRadius: '12px',
-          boxShadow: 'var(--glow-cyan), var(--shadow-card)',
+          maxWidth: '480px',
+          borderRadius: '16px',
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
           maxHeight: '90dvh',
+          position: 'relative',
         }}
       >
-        {/* Header */}
+        {/* Hardware Bezel Header */}
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             padding: '14px 18px',
-            borderBottom: '1px solid var(--color-border-subtle)',
-            backgroundColor: 'var(--color-surface-raised)',
+            background: 'linear-gradient(180deg, #1e293b 0%, #121824 100%)',
+            borderBottom: '1.5px solid #070a0f',
+            boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.2)',
           }}
         >
-          <h2
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: '1.15rem',
-              fontWeight: 700,
-              letterSpacing: '0.05em',
-              color: 'var(--color-neon-cyan)',
-              textTransform: 'uppercase',
-            }}
-          >
-            {title}
-          </h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span
+              style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                backgroundColor: 'var(--color-neon-cyan)',
+                boxShadow: '0 0 8px var(--color-neon-cyan)',
+              }}
+            />
+            <h2
+              style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: '1.15rem',
+                fontWeight: 800,
+                letterSpacing: '0.08em',
+                color: '#ffffff',
+                textTransform: 'uppercase',
+                textShadow: '0 1px 2px rgba(0, 0, 0, 0.8)',
+              }}
+            >
+              {title}
+            </h2>
+          </div>
           <Button
             variant="ghost"
             size="sm"
             onClick={onClose}
             aria-label="Close modal"
-            style={{ padding: '4px' }}
+            style={{ padding: '6px', width: '32px', height: '32px', borderRadius: '50%' }}
           >
-            <X size={20} />
+            <X size={18} />
           </Button>
         </div>
 
-        {/* Content */}
+        {/* Recessed Hardware Body */}
         <div
+          className="neo-sunken"
           style={{
-            padding: '18px',
+            margin: '10px 14px',
+            padding: '16px',
+            borderRadius: '12px',
             overflowY: 'auto',
             color: 'var(--color-text-primary)',
           }}
@@ -115,8 +130,8 @@ export const Modal: React.FC<ModalProps> = ({
           <div
             style={{
               padding: '12px 18px',
-              borderTop: '1px solid var(--color-border-subtle)',
-              backgroundColor: 'var(--color-surface-raised)',
+              background: 'linear-gradient(180deg, #121824 0%, #0d121c 100%)',
+              borderTop: '1px solid rgba(255, 255, 255, 0.08)',
               display: 'flex',
               justifyContent: 'flex-end',
               gap: '10px',

@@ -162,7 +162,10 @@ async fn test_websocket_signaling_connection() {
 
     // Send Ping
     let ping_json = serde_json::to_string(&SignalingMessage::Ping).unwrap();
-    ws_stream.send(WsMessage::Text(ping_json.into())).await.unwrap();
+    ws_stream
+        .send(WsMessage::Text(ping_json.into()))
+        .await
+        .unwrap();
 
     // Send Candidate
     let cand_msg = SignalingMessage::Candidate {
@@ -171,7 +174,10 @@ async fn test_websocket_signaling_connection() {
         sdp_mline_index: Some(0),
     };
     let cand_json = serde_json::to_string(&cand_msg).unwrap();
-    ws_stream.send(WsMessage::Text(cand_json.into())).await.unwrap();
+    ws_stream
+        .send(WsMessage::Text(cand_json.into()))
+        .await
+        .unwrap();
 
     // Close WebSocket
     ws_stream.close(None).await.unwrap();

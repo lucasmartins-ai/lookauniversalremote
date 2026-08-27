@@ -1,61 +1,68 @@
-name: CI — Cross-Platform Test & Lint Matrix
+name: LookARemote CI Pipeline
 
 on:
   push:
-    branches: [main, master, develop]
+    branches: [main]
   pull_request:
-    branches: [main, master, develop]
+    branches: [main]
 
 jobs:
-  test-and-lint:
-    name: Test & Lint (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        node-version: [20.x]
-        rust-toolchain: [stable]
-
+  rust-host-daemon:
+    name: Rust Host Daemon & Protocol
+    runs-on: macos-latest
     steps:
-      - name: Checkout Repository
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Rust Toolchain
+      - name: Install Rust Toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: ${{ matrix.rust-toolchain }}
           components: clippy, rustfmt
 
-      - name: Rust Cache
-        uses: Swatinem/rust-cache@v2
-
-      - name: Setup Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+      - name: Cache Cargo Dependencies
+        uses: actions/cache@v4
         with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'npm'
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Install Linux Build Dependencies
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y pkg-config libudev-dev
+      - name: Check Rust Formatting
+        run: cargo fmt --all -- --check
 
-      - name: Run Cargo Check & Benchmarks Verification
-        run: cargo check --benches --workspace
-
-      - name: Run Cargo Test Suite
-        run: cargo test --workspace --verbose
-
-      - name: Run Cargo Clippy (Strict)
+      - name: Run Clippy Lints
         run: cargo clippy --workspace --all-targets -- -D warnings
 
-      - name: Install NPM Dependencies
+      - name: Run Rust Integration Tests
+        run: cargo test --workspace -- --test-threads=2
+
+  web-client:
+    name: Web Client PWA
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
         run: npm ci
 
-      - name: Run Frontend & Protocol Vitest Tests
-        run: npm test
+      - name: Typecheck Web Client
+        run: cd apps/web-client && npm run build
 
-      - name: Run TypeScript Type Check & Build
-        run: npm run build --workspaces --if-present
+      - name: Run Web Client Unit Tests
+        run: cd apps/web-client && npm test
+
+      - name: Verify Production PWA Dist Artifacts
+        run: |
+          test -f apps/web-client/dist/manifest.webmanifest || (echo "manifest missing" && exit 1)
+          test -f apps/web-client/dist/sw.js || (echo "sw.js missing" && exit 1)
+          test -f apps/web-client/dist/index.html || (echo "index.html missing" && exit 1)

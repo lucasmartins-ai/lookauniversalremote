@@ -30,28 +30,29 @@ export const PlayerBadge: React.FC<PlayerBadgeProps> = ({
         gap: '6px',
         padding: '3px 10px',
         borderRadius: '999px',
-        backgroundColor: 'rgba(10, 16, 24, 0.85)',
+        background: 'linear-gradient(180deg, #182232 0%, #0d121c 100%)',
         border: `1.5px solid ${color}`,
-        boxShadow: `0 0 10px ${color}40`,
-        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-        fontSize: '0.75rem',
-        fontWeight: 800,
-        color: '#F0F6FC',
+        boxShadow: `0 0 10px ${color}40, inset 0 1px 1px rgba(255, 255, 255, 0.2)`,
+        fontFamily: 'var(--font-display)',
+        fontSize: '0.8rem',
+        fontWeight: 900,
+        color: '#ffffff',
         letterSpacing: '0.04em',
         userSelect: 'none',
       }}
     >
       <span
+        className="retro-led"
         style={{
           display: 'inline-block',
           width: '8px',
           height: '8px',
           borderRadius: '50%',
           backgroundColor: color,
-          boxShadow: `0 0 8px ${color}`,
+          boxShadow: `0 0 8px ${color}, inset 0 1px 1px rgba(255, 255, 255, 0.8)`,
         }}
       />
-      <span style={{ color }}>{playerLabel}</span>
+      <span style={{ color, textShadow: `0 0 8px ${color}60` }}>{playerLabel}</span>
 
       {batteryLevel !== null && batteryLevel !== undefined && (
         <span
@@ -59,8 +60,10 @@ export const PlayerBadge: React.FC<PlayerBadgeProps> = ({
             marginLeft: '4px',
             paddingLeft: '6px',
             borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
-            color: batteryLevel <= 20 ? '#FF0055' : '#8B949E',
-            fontSize: '0.7rem',
+            color: batteryLevel <= 20 ? '#ff2a55' : '#94a3b8',
+            fontSize: '0.72rem',
+            fontFamily: 'var(--font-mono)',
+            fontWeight: 700,
           }}
         >
           {isCharging ? '⚡' : '🔋'} {batteryLevel}%

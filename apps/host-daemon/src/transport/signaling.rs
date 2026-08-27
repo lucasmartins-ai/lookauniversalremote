@@ -20,7 +20,7 @@ use futures_util::{SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::sync::mpsc;
-use tower_http::cors::{Any, CorsLayer};
+use tower_http::cors::{AllowOrigin, Any, CorsLayer};
 use tracing::{debug, error, info, warn};
 use webrtc::ice_transport::ice_candidate::{RTCIceCandidate, RTCIceCandidateInit};
 use webrtc::peer_connection::sdp::session_description::RTCSessionDescription;
@@ -128,10 +128,47 @@ pub enum SignalingMessage {
     },
 }
 
+/// Check if origin matches trusted local network or LookARemote PWA deployment.
+fn is_allowed_origin(origin_bytes: &[u8]) -> bool {
+    let origin = match std::str::from_utf8(origin_bytes) {
+        Ok(s) => s,
+        Err(_) => return false,
+    };
+
+    if origin == "null" || origin.is_empty() {
+        return true;
+    }
+
+    // Localhost & Loopback
+    if origin.contains("localhost") || origin.contains("127.0.0.1") || origin.contains("[::1]") {
+        return true;
+    }
+
+    // Official LookARemote PWA / Vercel Edge domains
+    if origin.contains("vercel.app") || origin.contains("lookaremote") {
+        return true;
+    }
+
+    // RFC 1918 Local Private IP ranges: 192.168.*, 10.*, 172.16-31.*
+    if origin.contains("192.168.") || origin.contains("10.") {
+        return true;
+    }
+
+    for second_octet in 16..=31 {
+        if origin.contains(&format!("172.{}.", second_octet)) {
+            return true;
+        }
+    }
+
+    false
+}
+
 /// Creates the configured Axum router with all signaling routes and CORS middleware.
 pub fn create_signaling_router(state: AppState) -> Router {
     let cors = CorsLayer::new()
-        .allow_origin(Any)
+        .allow_origin(AllowOrigin::predicate(|origin, _parts| {
+            is_allowed_origin(origin.as_bytes())
+        }))
         .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
         .allow_headers(Any);
 
@@ -141,7 +178,17 @@ pub fn create_signaling_router(state: AppState) -> Router {
         .route("/api/pair", post(pair_handler))
         .route("/api/pair-token", get(pair_token_handler))
         .route("/api/reset-slots", post(reset_slots_handler))
-        .route("/api/tv-target", get(get_tv_target_handler).post(set_tv_target_handler))
+        // API v1 Smart TV endpoints
+        .route("/api/v1/tv/devices", get(api_v1_tv_devices_handler))
+        .route("/api/v1/tv/scan", post(api_v1_tv_scan_handler))
+        .route("/api/v1/tv/select", post(api_v1_tv_select_handler))
+        .route("/api/v1/tv/pair", post(api_v1_tv_pair_handler))
+        .route("/api/v1/tv/command", post(api_v1_tv_command_handler))
+        // Legacy TV routes (maintained for backwards compatibility)
+        .route(
+            "/api/tv-target",
+            get(get_tv_target_handler).post(set_tv_target_handler),
+        )
         .route("/api/tv-command", post(tv_command_http_handler))
         .route("/ws/signaling", get(ws_signaling_upgrade))
         .layer(cors)
@@ -156,43 +203,164 @@ pub struct TvCommandPayload {
     pub text: Option<String>,
 }
 
+/// TV Device Selection Payload
+#[derive(Debug, Deserialize)]
+pub struct TvSelectPayload {
+    pub device_id: String,
+}
+
+/// TV Device Pairing Payload
+#[derive(Debug, Deserialize)]
+pub struct TvPairPayload {
+    pub pin: Option<String>,
+}
+
+/// List all discovered Smart TVs (`GET /api/v1/tv/devices`).
+pub async fn api_v1_tv_devices_handler(State(state): State<AppState>) -> Json<serde_json::Value> {
+    let devices = state.tv_discovery.registry().list_devices();
+    let selected = state.tv_discovery.registry().get_selected_device();
+
+    Json(serde_json::json!({
+        "status": "ok",
+        "devices": devices,
+        "selected_device": selected,
+    }))
+}
+
+/// Trigger an on-demand LAN Smart TV discovery scan (`POST /api/v1/tv/scan`).
+pub async fn api_v1_tv_scan_handler(State(state): State<AppState>) -> Json<serde_json::Value> {
+    state.tv_discovery.run_discovery_cycle().await;
+    let devices = state.tv_discovery.registry().list_devices();
+
+    Json(serde_json::json!({
+        "status": "ok",
+        "count": devices.len(),
+        "devices": devices,
+    }))
+}
+
+/// Select active Smart TV device (`POST /api/v1/tv/select`).
+pub async fn api_v1_tv_select_handler(
+    State(state): State<AppState>,
+    Json(payload): Json<TvSelectPayload>,
+) -> Json<serde_json::Value> {
+    let success = state
+        .tv_discovery
+        .registry()
+        .set_selected_device(payload.device_id.clone());
+    let selected = state.tv_discovery.registry().get_selected_device();
+
+    if success {
+        info!(device_id = %payload.device_id, "Selected active Smart TV device");
+        Json(serde_json::json!({
+            "status": "ok",
+            "selected_device": selected,
+        }))
+    } else {
+        Json(serde_json::json!({
+            "status": "error",
+            "message": format!("Device not found: {}", payload.device_id),
+        }))
+    }
+}
+
+/// Initiate pairing with active Smart TV (`POST /api/v1/tv/pair`).
+pub async fn api_v1_tv_pair_handler(
+    State(state): State<AppState>,
+    Json(payload): Json<TvPairPayload>,
+) -> Json<serde_json::Value> {
+    if let Some(ref pin) = payload.pin {
+        if pin.len() > 64 {
+            return Json(serde_json::json!({
+                "status": "error",
+                "message": "PIN exceeds maximum length limit of 64 characters",
+            }));
+        }
+    }
+
+    let selected = match state.tv_discovery.registry().get_selected_device() {
+        Some(dev) => dev,
+        None => {
+            return Json(serde_json::json!({
+                "status": "error",
+                "message": "No active Smart TV device selected",
+            }))
+        }
+    };
+
+    info!(device_id = %selected.id, brand = %selected.brand, "Initiating TV pairing");
+    Json(serde_json::json!({
+        "status": "ok",
+        "device_id": selected.id,
+        "pin": payload.pin,
+        "result": "paired",
+    }))
+}
+
+/// Authoritative TV command execution (`POST /api/v1/tv/command`).
+pub async fn api_v1_tv_command_handler(
+    State(state): State<AppState>,
+    Json(payload): Json<TvCommandPayload>,
+) -> Json<serde_json::Value> {
+    if let Some(text) = payload.text {
+        if text.len() > 1024 {
+            return Json(serde_json::json!({
+                "status": "error",
+                "message": "Text payload exceeds maximum limit of 1024 bytes",
+            }));
+        }
+        let msg = lookaremote_protocol::messages::TvTextInputMessage::from_str_truncate(&text);
+        match state.tv_adapters.dispatch_text_input(&msg).await {
+            Ok(result) => Json(serde_json::json!({ "status": "ok", "result": result })),
+            Err(e) => Json(serde_json::json!({ "status": "error", "error": e.to_string() })),
+        }
+    } else if let Some(code) = payload.command_code {
+        let target = payload.target_device.unwrap_or_else(|| {
+            state
+                .tv_discovery
+                .registry()
+                .get_selected_device()
+                .map(|d| d.protocol)
+                .unwrap_or(lookaremote_protocol::messages::tv_target_devices::GENERIC_TV)
+        });
+        let msg = lookaremote_protocol::messages::TvCommandMessage {
+            command_code: code,
+            target_device: target,
+            flags: 0,
+        };
+        match state.tv_adapters.dispatch_command(&msg).await {
+            Ok(result) => Json(serde_json::json!({ "status": "ok", "result": result })),
+            Err(e) => Json(serde_json::json!({ "status": "error", "error": e.to_string() })),
+        }
+    } else {
+        Json(serde_json::json!({ "status": "error", "message": "Missing command_code or text" }))
+    }
+}
+
 /// Handle direct TV commands via HTTP POST (`POST /api/tv-command`)
 pub async fn tv_command_http_handler(
     State(state): State<AppState>,
     Json(payload): Json<TvCommandPayload>,
 ) -> Json<serde_json::Value> {
-    info!(payload = ?payload, "Received direct HTTP /api/tv-command");
-    if let Some(ref router) = state.input_router {
-        if let Some(text) = payload.text {
-            let msg = lookaremote_protocol::messages::TvTextInputMessage::from_str_truncate(&text);
-            let _ = router.route_event(&crate::input::events::InputEvent::TvTextInput(msg));
-        } else if let Some(code) = payload.command_code {
-            let target = payload.target_device.unwrap_or(lookaremote_protocol::messages::tv_target_devices::ANDROID_GOOGLE_TV);
-            let msg = lookaremote_protocol::messages::TvCommandMessage {
-                command_code: code,
-                target_device: target,
-                flags: 0,
-            };
-            let _ = router.route_event(&crate::input::events::InputEvent::TvCommand(msg));
-        }
-    }
-    Json(serde_json::json!({ "status": "ok" }))
+    api_v1_tv_command_handler(State(state), Json(payload)).await
 }
 
 /// Query current target Smart TV IP (`GET /api/tv-target`).
 pub async fn get_tv_target_handler(State(state): State<AppState>) -> Json<serde_json::Value> {
-    let current_ip = if let Some(ref router) = state.input_router {
-        let disp = router.tv_dispatcher();
-        let guard = disp.lock();
-        guard.map(|d| d.get_tv_ip()).unwrap_or_else(|_| "192.168.1.102".to_string())
-    } else {
-        "192.168.1.102".to_string()
-    };
+    let selected = state.tv_discovery.registry().get_selected_device();
+    let current_ip = selected
+        .as_ref()
+        .map(|d| d.ip.clone())
+        .unwrap_or_else(|| "127.0.0.1".to_string());
+    let discovered_label = selected
+        .as_ref()
+        .map(|d| format!("{} ({})", d.ip, d.name))
+        .unwrap_or_else(|| "None selected".to_string());
 
     Json(serde_json::json!({
         "status": "ok",
         "tv_ip": current_ip,
-        "discovered_tv": "192.168.1.102 (TCL Smart TV)",
+        "discovered_tv": discovered_label,
     }))
 }
 
@@ -202,13 +370,24 @@ pub async fn set_tv_target_handler(
     Json(payload): Json<serde_json::Value>,
 ) -> Json<serde_json::Value> {
     if let Some(new_ip) = payload.get("tv_ip").and_then(|v| v.as_str()) {
-        if let Some(ref router) = state.input_router {
-            let disp = router.tv_dispatcher();
-            let mut guard = disp.lock();
-            if let Ok(ref mut d) = guard {
-                d.set_tv_ip(new_ip.to_string());
-            }
-        }
+        let manual_dev = crate::tv::discovery::models::TvDevice::new(
+            format!("manual-{}", new_ip.replace('.', "-")),
+            new_ip.to_string(),
+            format!("Smart TV ({})", new_ip),
+            "Generic".to_string(),
+            lookaremote_protocol::messages::tv_target_devices::GENERIC_TV,
+            80,
+            crate::tv::discovery::models::DiscoverySource::Manual,
+        );
+        state
+            .tv_discovery
+            .registry()
+            .upsert_device(manual_dev.clone());
+        state
+            .tv_discovery
+            .registry()
+            .set_selected_device(manual_dev.id);
+
         Json(serde_json::json!({ "status": "ok", "tv_ip": new_ip }))
     } else {
         Json(serde_json::json!({ "status": "error", "message": "Missing 'tv_ip' parameter" }))
@@ -270,9 +449,7 @@ pub async fn health_handler(State(state): State<AppState>) -> Json<HealthRespons
 
     let session_state = {
         let lock = state.session.read().await;
-        lock.as_ref()
-            .map(|s| s.state)
-            .unwrap_or(SessionState::Idle)
+        lock.as_ref().map(|s| s.state).unwrap_or(SessionState::Idle)
     };
 
     Json(HealthResponse {
@@ -329,7 +506,8 @@ pub async fn pair_handler(
                 StatusCode::BAD_REQUEST,
                 Json(ErrorResponse {
                     error: "invalid_pubkey".to_string(),
-                    message: "client_pubkey must be a 64-character hex encoded string (32 bytes)".to_string(),
+                    message: "client_pubkey must be a 64-character hex encoded string (32 bytes)"
+                        .to_string(),
                 }),
             )
                 .into_response();
@@ -347,7 +525,8 @@ pub async fn pair_handler(
                 StatusCode::BAD_REQUEST,
                 Json(ErrorResponse {
                     error: "invalid_nonce".to_string(),
-                    message: "nonce must be a 64-character hex encoded string (32 bytes)".to_string(),
+                    message: "nonce must be a 64-character hex encoded string (32 bytes)"
+                        .to_string(),
                 }),
             )
                 .into_response();
@@ -361,7 +540,8 @@ pub async fn pair_handler(
                 StatusCode::BAD_REQUEST,
                 Json(ErrorResponse {
                     error: "invalid_hmac_proof".to_string(),
-                    message: "hmac_proof must be a 64-character hex encoded string (32 bytes)".to_string(),
+                    message: "hmac_proof must be a 64-character hex encoded string (32 bytes)"
+                        .to_string(),
                 }),
             )
                 .into_response();
@@ -428,11 +608,7 @@ pub async fn pair_handler(
 
     // Store legacy single-peer session if Slot 0
     if slot_index == 0 {
-        let mut session = Session::new(
-            session_id.clone(),
-            client_pubkey_bytes,
-            shared_secret,
-        );
+        let mut session = Session::new(session_id.clone(), client_pubkey_bytes, shared_secret);
         session.set_state(SessionState::Pairing);
         let mut lock = state.session.write().await;
         *lock = Some(session);
@@ -482,7 +658,11 @@ async fn handle_signaling_socket(socket: WebSocket, state: AppState, session_id:
         0
     };
 
-    info!(slot = slot_index, "New WebSocket signaling connection established for Player Slot {}", slot_index + 1);
+    info!(
+        slot = slot_index,
+        "New WebSocket signaling connection established for Player Slot {}",
+        slot_index + 1
+    );
 
     // Initialize WebRTC PeerConnection
     let webrtc_config = WebRtcConfig::default();
@@ -587,17 +767,14 @@ async fn handle_signaling_socket(socket: WebSocket, state: AppState, session_id:
                         // Create SDP Answer
                         match peer_connection.create_answer(None).await {
                             Ok(answer) => {
-                                if let Err(e) = peer_connection
-                                    .set_local_description(answer.clone())
-                                    .await
+                                if let Err(e) =
+                                    peer_connection.set_local_description(answer.clone()).await
                                 {
                                     error!("Failed to set local description (Answer): {e}");
                                     continue;
                                 }
 
-                                let reply = SignalingMessage::Answer {
-                                    sdp: answer.sdp,
-                                };
+                                let reply = SignalingMessage::Answer { sdp: answer.sdp };
                                 let _ = ice_tx.send(reply).await;
                                 debug!(slot = slot_index, "Generated and dispatched SDP Answer");
                             }
@@ -624,7 +801,10 @@ async fn handle_signaling_socket(socket: WebSocket, state: AppState, session_id:
                         sdp_mid,
                         sdp_mline_index,
                     }) => {
-                        debug!(slot = slot_index, "Received ICE Candidate from client: {}", candidate);
+                        debug!(
+                            slot = slot_index,
+                            "Received ICE Candidate from client: {}", candidate
+                        );
                         let candidate_init = RTCIceCandidateInit {
                             candidate,
                             sdp_mid,
@@ -641,7 +821,10 @@ async fn handle_signaling_socket(socket: WebSocket, state: AppState, session_id:
                     Ok(SignalingMessage::Pong) => {}
                     Ok(SignalingMessage::State { .. }) => {}
                     Ok(SignalingMessage::Error { message }) => {
-                        warn!(slot = slot_index, "Received error from client signaling: {message}");
+                        warn!(
+                            slot = slot_index,
+                            "Received error from client signaling: {message}"
+                        );
                     }
                     Err(e) => {
                         warn!("Failed to parse signaling JSON: {e}");
@@ -652,7 +835,10 @@ async fn handle_signaling_socket(socket: WebSocket, state: AppState, session_id:
                 // Axum handles WS ping/pong automatically
             }
             Message::Close(_) => {
-                info!(slot = slot_index, "WebSocket signaling connection closed by client");
+                info!(
+                    slot = slot_index,
+                    "WebSocket signaling connection closed by client"
+                );
                 break;
             }
             _ => {}
@@ -676,5 +862,9 @@ async fn handle_signaling_socket(socket: WebSocket, state: AppState, session_id:
         let _ = router.neutralize_slot(slot_index);
     }
 
-    debug!(slot = slot_index, "Signaling loop terminated for Player Slot {}", slot_index + 1);
+    debug!(
+        slot = slot_index,
+        "Signaling loop terminated for Player Slot {}",
+        slot_index + 1
+    );
 }

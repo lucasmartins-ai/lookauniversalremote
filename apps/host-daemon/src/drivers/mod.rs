@@ -13,11 +13,16 @@ pub mod uinput_driver;
 pub mod vigem_driver;
 pub mod windows_driver;
 
-pub use keyboard_driver::{create_platform_keyboard_driver, MockKeyboardDriver, UInputKeyboardDriver, VirtualKeyboardDriver};
+pub use keyboard_driver::{
+    create_platform_keyboard_driver, MockKeyboardDriver, UInputKeyboardDriver,
+    VirtualKeyboardDriver,
+};
 pub use macos_driver::{MacOSKeyboardDriver, MacOSMouseDriver};
 pub use macos_permissions::check_macos_accessibility_permissions;
 pub use mock_driver::MockGamepadDriver;
-pub use mouse_driver::{create_platform_mouse_driver, MockMouseDriver, UInputMouseDriver, VirtualMouseDriver};
+pub use mouse_driver::{
+    create_platform_mouse_driver, MockMouseDriver, UInputMouseDriver, VirtualMouseDriver,
+};
 pub use uinput_driver::UInputGamepadDriver;
 pub use vigem_driver::ViGEmGamepadDriver;
 pub use windows_driver::{WindowsKeyboardDriver, WindowsMouseDriver};
@@ -73,7 +78,11 @@ pub fn create_platform_driver_for_slot(slot: u8) -> Box<dyn VirtualGamepadDriver
     {
         match UInputGamepadDriver::new() {
             Ok(driver) => {
-                info!(slot = slot, "Using native Linux /dev/uinput virtual Xbox 360 driver for Player {}", slot + 1);
+                info!(
+                    slot = slot,
+                    "Using native Linux /dev/uinput virtual Xbox 360 driver for Player {}",
+                    slot + 1
+                );
                 return Box::new(driver);
             }
             Err(err) => {
@@ -90,7 +99,11 @@ pub fn create_platform_driver_for_slot(slot: u8) -> Box<dyn VirtualGamepadDriver
     {
         match ViGEmGamepadDriver::new() {
             Ok(driver) => {
-                info!(slot = slot, "Using native Windows ViGEm virtual Xbox 360 driver for Player {}", slot + 1);
+                info!(
+                    slot = slot,
+                    "Using native Windows ViGEm virtual Xbox 360 driver for Player {}",
+                    slot + 1
+                );
                 return Box::new(driver);
             }
             Err(err) => {
@@ -103,6 +116,10 @@ pub fn create_platform_driver_for_slot(slot: u8) -> Box<dyn VirtualGamepadDriver
         }
     }
 
-    info!(slot = slot, "Using MockGamepadDriver for Player Slot {} (development / test mode)", slot + 1);
+    info!(
+        slot = slot,
+        "Using MockGamepadDriver for Player Slot {} (development / test mode)",
+        slot + 1
+    );
     Box::new(MockGamepadDriver::for_slot(slot))
 }

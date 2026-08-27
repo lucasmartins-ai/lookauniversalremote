@@ -21,13 +21,13 @@ pub mod key_state {
 /// Keyboard modifier bitmask constants (`u8`).
 pub mod modifiers {
     /// Control key modifier (Bit 0).
-    pub const CTRL: u8 = 1 << 0;  // 0x01
+    pub const CTRL: u8 = 1 << 0; // 0x01
     /// Shift key modifier (Bit 1).
     pub const SHIFT: u8 = 1 << 1; // 0x02
     /// Alt / Option key modifier (Bit 2).
-    pub const ALT: u8 = 1 << 2;   // 0x04
+    pub const ALT: u8 = 1 << 2; // 0x04
     /// Meta / Command / Super / Windows key modifier (Bit 3).
-    pub const META: u8 = 1 << 3;  // 0x08 (Super/Command/Windows)
+    pub const META: u8 = 1 << 3; // 0x08 (Super/Command/Windows)
 }
 
 /// MSG_KEYBOARD payload (0x05) — 4 bytes.

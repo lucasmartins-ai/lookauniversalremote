@@ -31,7 +31,6 @@ import { useBatteryTelemetry } from '../features/battery/useBatteryTelemetry';
 
 export const App: React.FC = () => {
   const { settings, updateSettings } = useSettings();
-  const { stage: pairingStage, error: pairingError, pairWithRawUri, pairWithParams, reset: resetPairing } = usePairing();
   const { state: connectionState, telemetry, bridge, connect: connectWebRtc, disconnect: disconnectWebRtc } = useWebRtc();
 
   const [activeTab, setActiveTab] = useState<'qr' | 'manual'>('qr');
@@ -91,6 +90,11 @@ export const App: React.FC = () => {
     [connectWebRtc]
   );
 
+  const { stage: pairingStage, error: pairingError, pairWithRawUri, pairWithParams, reset: resetPairing } = usePairing({
+    autoCheckUrlHash: true,
+    onSuccess: handlePairingSuccess,
+  });
+
   const handleScanQr = async (text: string) => {
     try {
       const session = await pairWithRawUri(text);
@@ -134,7 +138,7 @@ export const App: React.FC = () => {
         height: '100dvh',
         display: 'flex',
         flexDirection: 'column',
-        backgroundColor: '#000000',
+        backgroundColor: '#070a0f',
         color: 'var(--color-text-primary)',
         overflow: 'hidden',
         position: 'relative',
@@ -143,43 +147,43 @@ export const App: React.FC = () => {
       {/* Background Grid */}
       <div className="cyber-grid-bg" />
 
-      {/* Top Header Bar - Only shown on connection / pairing screen */}
+      {/* Top 3D Header Bar - Shown on connection / pairing screen */}
       {connectionState !== 'connected' && (
         <header
+          className="neo-raised"
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '12px 16px',
-            borderBottom: '1px solid var(--color-border-subtle)',
-            backgroundColor: 'rgba(5, 8, 12, 0.9)',
-            backdropFilter: 'blur(10px)',
+            padding: '12px 18px',
             zIndex: 40,
             flexShrink: 0,
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div
+              className="retro-led"
               style={{
-                width: '28px',
-                height: '28px',
-                borderRadius: '6px',
-                backgroundColor: 'rgba(0, 229, 255, 0.15)',
-                border: '1px solid var(--color-neon-cyan)',
+                width: '32px',
+                height: '32px',
+                borderRadius: '8px',
+                background: 'linear-gradient(135deg, #00f0ff 0%, #008ba3 100%)',
+                border: '1px solid rgba(255, 255, 255, 0.4)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                boxShadow: '0 0 8px rgba(0, 229, 255, 0.3)',
+                boxShadow: '0 0 14px rgba(0, 229, 255, 0.4), inset 0 1px 2px rgba(255, 255, 255, 0.6)',
               }}
             >
-              <Zap size={16} color="var(--color-neon-cyan)" />
+              <Zap size={18} color="#040d1a" />
             </div>
             <div>
               <h1
+                className="retro-embossed-text"
                 style={{
                   fontFamily: 'var(--font-display)',
-                  fontSize: '1.1rem',
-                  fontWeight: 700,
+                  fontSize: '1.2rem',
+                  fontWeight: 900,
                   letterSpacing: '0.08em',
                   color: '#ffffff',
                   lineHeight: 1,
@@ -192,10 +196,11 @@ export const App: React.FC = () => {
                   fontFamily: 'var(--font-mono)',
                   fontSize: '0.65rem',
                   color: 'var(--color-text-muted)',
-                  letterSpacing: '0.05em',
+                  letterSpacing: '0.08em',
+                  fontWeight: 600,
                 }}
               >
-                UNIVERSAL REMOTE • 120HZ
+                3D RETRO DECK • 120HZ
               </span>
             </div>
           </div>
@@ -203,13 +208,13 @@ export const App: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <StatusBadge status={statusVariant} />
             <Button
-              variant="ghost"
+              variant="secondary"
               size="sm"
               onClick={() => setSettingsOpen(true)}
               aria-label="Settings"
-              style={{ padding: '6px', borderRadius: '50%' }}
+              style={{ width: '34px', height: '34px', padding: 0, borderRadius: '50%' }}
             >
-              <Settings size={18} color="var(--color-text-secondary)" />
+              <Settings size={16} color="var(--color-text-secondary)" />
             </Button>
           </div>
         </header>
@@ -226,18 +231,19 @@ export const App: React.FC = () => {
               flexDirection: 'column',
               padding: '16px',
               justifyContent: 'space-between',
+              zIndex: 10,
             }}
           >
-            {/* View Switcher Tabs */}
+            {/* View Switcher Tabs (3D Recessed Track) */}
             <div
+              className="neo-sunken"
               style={{
                 display: 'flex',
-                borderRadius: '8px',
-                backgroundColor: 'var(--color-surface-card)',
-                padding: '4px',
-                border: '1px solid var(--color-border-subtle)',
+                borderRadius: '12px',
+                padding: '5px',
                 marginBottom: '16px',
                 zIndex: 20,
+                gap: '6px',
               }}
             >
               <Button
@@ -270,13 +276,14 @@ export const App: React.FC = () => {
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
               {activeTab === 'qr' ? (
                 <div
+                  className="neo-sunken-deep"
                   style={{
                     width: '100%',
                     height: '100%',
-                    borderRadius: '12px',
+                    borderRadius: '16px',
                     overflow: 'hidden',
-                    border: '1px solid var(--color-border-accent)',
                     position: 'relative',
+                    padding: '6px',
                   }}
                 >
                   <QrScannerView onScan={handleScanQr} />
@@ -292,18 +299,20 @@ export const App: React.FC = () => {
                 style={{
                   marginTop: '12px',
                   padding: '10px 14px',
-                  borderRadius: '8px',
-                  backgroundColor: 'rgba(255, 23, 68, 0.15)',
-                  border: '1px solid var(--color-neon-red)',
+                  borderRadius: '10px',
+                  backgroundColor: 'rgba(255, 42, 85, 0.15)',
+                  border: '1.5px solid var(--color-neon-red)',
+                  boxShadow: '0 0 12px rgba(255, 42, 85, 0.3)',
                   color: 'var(--color-neon-red)',
                   fontSize: '0.8rem',
                   fontFamily: 'var(--font-mono)',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px',
+                  fontWeight: 700,
                 }}
               >
-                <ShieldAlert size={16} />
+                <ShieldAlert size={18} />
                 <span>{pairingError}</span>
               </div>
             )}
@@ -321,30 +330,34 @@ export const App: React.FC = () => {
               justifyContent: 'center',
               padding: '24px',
               gap: '24px',
+              zIndex: 10,
             }}
           >
-            <Spinner size={64} label="NEGOTIATING WEBRTC TRANSPORT" />
+            <Spinner size={64} label="NEGOTIATING 120HZ WEBRTC TRANSPORT" />
 
             <div
+              className="neo-sunken"
               style={{
                 textAlign: 'center',
-                maxWidth: '320px',
+                maxWidth: '340px',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '8px',
+                padding: '14px 18px',
+                borderRadius: '12px',
               }}
             >
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', color: 'var(--color-neon-cyan)' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', color: 'var(--color-neon-cyan)', fontWeight: 700 }}>
                 {pairingStage === 'handshaking'
                   ? 'COMPUTING X25519 DH & HMAC PROOF...'
                   : 'EXCHANGING SDP & TRICKLE ICE CANDIDATES...'}
               </div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                Target: {telemetry.hostIp || 'Local Host'}
+              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontFamily: 'var(--font-mono)' }}>
+                TARGET HOST: {telemetry.hostIp || 'Local Host (LAN)'}
               </div>
             </div>
 
-            <Button variant="ghost" size="sm" onClick={handleDisconnect} leftIcon={<RefreshCw size={14} />}>
+            <Button variant="secondary" size="sm" onClick={handleDisconnect} leftIcon={<RefreshCw size={14} />}>
               CANCEL CONNECTION
             </Button>
           </div>

@@ -1,9 +1,9 @@
 //! Stack-allocated binary protocol packet encoder.
 
-use core::ops::Deref;
 use crate::decoder::{Packet, Payload};
 use crate::header::HEADER_SIZE;
 use crate::ProtocolError;
+use core::ops::Deref;
 
 /// Maximum possible packet size for Protocol v1 frames (currently MSG_TV_TEXT_INPUT = 37 bytes).
 pub const MAX_PACKET_SIZE: usize = 48;
@@ -72,8 +72,14 @@ pub fn encode_packet(packet: &Packet) -> Result<PacketBuffer, ProtocolError> {
 /// Encode a packet directly into a destination slice. Returns total bytes written.
 #[inline(always)]
 pub fn encode_packet_to_slice(packet: &Packet, dest: &mut [u8]) -> Result<usize, ProtocolError> {
-    let total_size = packet.header.msg_type.total_frame_size()
-        .ok_or(ProtocolError::UnsupportedMessageType(packet.header.msg_type))?;
+    let total_size =
+        packet
+            .header
+            .msg_type
+            .total_frame_size()
+            .ok_or(ProtocolError::UnsupportedMessageType(
+                packet.header.msg_type,
+            ))?;
 
     if dest.len() < total_size {
         return Err(ProtocolError::BufferTooShort {

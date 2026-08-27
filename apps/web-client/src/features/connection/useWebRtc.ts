@@ -117,12 +117,12 @@ export function useWebRtc(): UseWebRtcResult {
       try {
         await transport.connect();
 
-        // Start 500ms heartbeat interval for watchdog keepalive & RTT sampling
+        // Start 80ms heartbeat interval for watchdog keepalive (<= watchdog_timeout / 3) & RTT sampling
         heartbeatTimerRef.current = setInterval(() => {
           if (bridgeRef.current && transportRef.current?.state === 'connected') {
             bridgeRef.current.sendHeartbeat();
           }
-        }, 500);
+        }, 80);
       } catch (err) {
         console.error('Failed to establish WebRTC transport:', err);
         setState('error');

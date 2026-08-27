@@ -69,13 +69,8 @@ impl MotionMessage {
         let ts = self.timestamp_us.to_le_bytes();
 
         [
-            yaw[0], yaw[1],
-            pitch[0], pitch[1],
-            roll[0], roll[1],
-            ax[0], ax[1],
-            ay[0], ay[1],
-            az[0], az[1],
-            ts[0], ts[1], ts[2], ts[3],
+            yaw[0], yaw[1], pitch[0], pitch[1], roll[0], roll[1], ax[0], ax[1], ay[0], ay[1],
+            az[0], az[1], ts[0], ts[1], ts[2], ts[3],
         ]
     }
 

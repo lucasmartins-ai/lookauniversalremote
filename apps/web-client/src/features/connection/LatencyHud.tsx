@@ -25,7 +25,6 @@ export const LatencyHud: React.FC<LatencyHudProps> = ({
 }) => {
   const [expanded, setExpanded] = useState(defaultExpanded);
 
-  // Determine RTT health level
   const rtt = telemetry.rttMs;
   let rttColor = 'var(--color-neon-green)';
   let rttLabel = 'EXCELLENT';
@@ -51,13 +50,9 @@ export const LatencyHud: React.FC<LatencyHudProps> = ({
 
   return (
     <div
-      className={`lookaremote-latency-hud ${className}`}
+      className={`lookaremote-latency-hud neo-raised ${className}`}
       style={{
-        backgroundColor: 'rgba(5, 8, 12, 0.85)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
-        border: '1px solid var(--color-border-subtle)',
-        borderRadius: '10px',
+        borderRadius: '12px',
         padding: expanded ? '10px 14px' : '6px 12px',
         color: 'var(--color-text-primary)',
         fontFamily: 'var(--font-mono)',
@@ -65,8 +60,8 @@ export const LatencyHud: React.FC<LatencyHudProps> = ({
         cursor: 'pointer',
         userSelect: 'none',
         WebkitUserSelect: 'none',
-        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.6)',
         transition: 'all var(--transition-normal)',
+        border: '1px solid rgba(255, 255, 255, 0.1)',
       }}
       onClick={toggleExpand}
     >
@@ -92,12 +87,13 @@ export const LatencyHud: React.FC<LatencyHudProps> = ({
         {/* RTT Badge */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <Activity size={14} color={rttColor} />
-          <span style={{ color: 'var(--color-text-secondary)', fontSize: '0.75rem' }}>RTT:</span>
+          <span style={{ color: 'var(--color-text-secondary)', fontSize: '0.75rem', fontWeight: 700 }}>RTT:</span>
           <span
             style={{
               color: rttColor,
-              fontWeight: 700,
+              fontWeight: 800,
               letterSpacing: '0.04em',
+              textShadow: `0 0 8px ${rttColor}60`,
             }}
           >
             {rtt > 0 ? `${rtt.toFixed(1)} ms` : '--'}
@@ -113,6 +109,7 @@ export const LatencyHud: React.FC<LatencyHudProps> = ({
           <span
             style={{
               fontSize: '0.7rem',
+              fontWeight: 700,
               color: telemetry.watchdogActive ? 'var(--color-neon-green)' : 'var(--color-text-muted)',
             }}
           >
@@ -126,17 +123,19 @@ export const LatencyHud: React.FC<LatencyHudProps> = ({
         </div>
       </div>
 
-      {/* Expanded Metrics Details */}
+      {/* Expanded Metrics Details (3D Sunken Display) */}
       {expanded && (
         <div
+          className="neo-sunken"
           style={{
             marginTop: '10px',
-            paddingTop: '8px',
-            borderTop: '1px solid var(--color-border-subtle)',
+            padding: '10px 12px',
+            borderRadius: '8px',
             display: 'grid',
             gridTemplateColumns: '1fr 1fr',
             gap: '8px',
             fontSize: '0.725rem',
+            fontWeight: 700,
           }}
         >
           <div>
@@ -182,12 +181,12 @@ export const LatencyHud: React.FC<LatencyHudProps> = ({
               alignItems: 'center',
               justifyContent: 'space-between',
               padding: '4px 8px',
-              borderRadius: '4px',
+              borderRadius: '6px',
               backgroundColor: 'rgba(255, 255, 255, 0.03)',
             }}
           >
             <span style={{ color: 'var(--color-text-muted)', fontSize: '0.7rem' }}>CHANNEL HEALTH</span>
-            <span style={{ color: rttColor, fontWeight: 700, fontSize: '0.7rem' }}>{rttLabel}</span>
+            <span style={{ color: rttColor, fontWeight: 800, fontSize: '0.7rem' }}>{rttLabel}</span>
           </div>
         </div>
       )}

@@ -32,7 +32,6 @@ export const TrackpadView: React.FC<TrackpadViewProps> = ({
 
   const handleTrackpadOutput = useCallback(
     (output: TouchpadOutput) => {
-      // Combine gesture output buttons with any held physical virtual buttons
       const combinedMask = output.buttonsMask | activeButtonsMask;
       bridge.sendTouchpad({
         dx: output.dx,
@@ -162,85 +161,97 @@ export const TrackpadView: React.FC<TrackpadViewProps> = ({
         />
       </div>
 
-      {/* Physical Mouse Buttons Bar (Left, Middle, Right) */}
+      {/* 3D Physical Retro Mouse Buttons (Left, Middle, Right Clickers) */}
       <div
         style={{
           display: 'grid',
           gridTemplateColumns: '2fr 1fr 2fr',
-          gap: '8px',
+          gap: '10px',
           marginBottom: '12px',
         }}
       >
+        {/* Left Clicker */}
         <button
           type="button"
           onPointerDown={() => handlePhysicalButtonDown(0x01)}
           onPointerUp={() => handlePhysicalButtonUp(0x01)}
           onPointerCancel={() => handlePhysicalButtonUp(0x01)}
+          className="lookaremote-btn retro-btn"
           style={{
             padding: '14px 8px',
-            borderRadius: '10px',
-            backgroundColor: activeButtonsMask & 0x01 ? 'var(--color-surface-active)' : 'var(--color-surface-card)',
-            border: `1px solid ${activeButtonsMask & 0x01 ? 'var(--color-neon-cyan)' : 'var(--color-border-subtle)'}`,
-            boxShadow: activeButtonsMask & 0x01 ? '0 0 12px var(--color-neon-cyan-glow)' : 'none',
-            color: activeButtonsMask & 0x01 ? 'var(--color-neon-cyan)' : 'var(--color-text-primary)',
-            fontFamily: 'var(--font-mono)',
-            fontSize: '0.85rem',
-            fontWeight: 700,
-            letterSpacing: '0.05em',
-            cursor: 'pointer',
-            touchAction: 'none',
+            borderRadius: '12px',
+            background: activeButtonsMask & 0x01
+              ? 'linear-gradient(180deg, #008ba3 0%, #00e5ff 100%)'
+              : 'linear-gradient(180deg, #222d42 0%, #161e2e 100%)',
+            border: `1.5px solid ${activeButtonsMask & 0x01 ? '#00f0ff' : 'rgba(255, 255, 255, 0.15)'}`,
+            boxShadow: activeButtonsMask & 0x01
+              ? 'var(--neo-shadow-button-cyan-pressed)'
+              : 'var(--neo-shadow-button-slate)',
+            color: activeButtonsMask & 0x01 ? '#040d1a' : 'var(--color-text-primary)',
+            fontFamily: 'var(--font-display)',
+            fontSize: '0.95rem',
+            fontWeight: 900,
+            letterSpacing: '0.06em',
           }}
         >
           LEFT CLICK
         </button>
 
+        {/* Middle Clicker */}
         <button
           type="button"
           onPointerDown={() => handlePhysicalButtonDown(0x04)}
           onPointerUp={() => handlePhysicalButtonUp(0x04)}
           onPointerCancel={() => handlePhysicalButtonUp(0x04)}
+          className="lookaremote-btn retro-btn"
           style={{
             padding: '14px 4px',
-            borderRadius: '10px',
-            backgroundColor: activeButtonsMask & 0x04 ? 'var(--color-surface-active)' : 'var(--color-surface-card)',
-            border: `1px solid ${activeButtonsMask & 0x04 ? 'var(--color-neon-amber)' : 'var(--color-border-subtle)'}`,
-            boxShadow: activeButtonsMask & 0x04 ? '0 0 12px var(--color-neon-amber-glow)' : 'none',
-            color: activeButtonsMask & 0x04 ? 'var(--color-neon-amber)' : 'var(--color-text-secondary)',
-            fontFamily: 'var(--font-mono)',
-            fontSize: '0.75rem',
-            fontWeight: 700,
-            cursor: 'pointer',
-            touchAction: 'none',
+            borderRadius: '12px',
+            background: activeButtonsMask & 0x04
+              ? 'linear-gradient(180deg, #b37400 0%, #ffb703 100%)'
+              : 'linear-gradient(180deg, #222d42 0%, #161e2e 100%)',
+            border: `1.5px solid ${activeButtonsMask & 0x04 ? '#ffb703' : 'rgba(255, 255, 255, 0.15)'}`,
+            boxShadow: activeButtonsMask & 0x04
+              ? 'var(--neo-shadow-button-amber-pressed)'
+              : 'var(--neo-shadow-button-slate)',
+            color: activeButtonsMask & 0x04 ? '#1a0e00' : 'var(--color-neon-amber)',
+            fontFamily: 'var(--font-display)',
+            fontSize: '0.85rem',
+            fontWeight: 800,
           }}
         >
           MIDDLE
         </button>
 
+        {/* Right Clicker */}
         <button
           type="button"
           onPointerDown={() => handlePhysicalButtonDown(0x02)}
           onPointerUp={() => handlePhysicalButtonUp(0x02)}
           onPointerCancel={() => handlePhysicalButtonUp(0x02)}
+          className="lookaremote-btn retro-btn"
           style={{
             padding: '14px 8px',
-            borderRadius: '10px',
-            backgroundColor: activeButtonsMask & 0x02 ? 'var(--color-surface-active)' : 'var(--color-surface-card)',
-            border: `1px solid ${activeButtonsMask & 0x02 ? 'var(--color-neon-cyan)' : 'var(--color-border-subtle)'}`,
-            boxShadow: activeButtonsMask & 0x02 ? '0 0 12px var(--color-neon-cyan-glow)' : 'none',
-            color: activeButtonsMask & 0x02 ? 'var(--color-neon-cyan)' : 'var(--color-text-primary)',
-            fontFamily: 'var(--font-mono)',
-            fontSize: '0.85rem',
-            fontWeight: 700,
-            letterSpacing: '0.05em',
-            cursor: 'pointer',
-            touchAction: 'none',
+            borderRadius: '12px',
+            background: activeButtonsMask & 0x02
+              ? 'linear-gradient(180deg, #008ba3 0%, #00e5ff 100%)'
+              : 'linear-gradient(180deg, #222d42 0%, #161e2e 100%)',
+            border: `1.5px solid ${activeButtonsMask & 0x02 ? '#00f0ff' : 'rgba(255, 255, 255, 0.15)'}`,
+            boxShadow: activeButtonsMask & 0x02
+              ? 'var(--neo-shadow-button-cyan-pressed)'
+              : 'var(--neo-shadow-button-slate)',
+            color: activeButtonsMask & 0x02 ? '#040d1a' : 'var(--color-text-primary)',
+            fontFamily: 'var(--font-display)',
+            fontSize: '0.95rem',
+            fontWeight: 900,
+            letterSpacing: '0.06em',
           }}
         >
           RIGHT CLICK
         </button>
       </div>
 
-      {/* Bottom Safety & Disconnect Bar */}
+      {/* Bottom Safety Bar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
         <Button
           variant="danger"

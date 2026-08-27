@@ -49,46 +49,131 @@ body {
   position: relative;
 }
 
-/* Background Cyber Grid */
+/* ==========================================================================
+   Tactile Console Texture Backgrounds
+   ========================================================================== */
 .cyber-grid-bg {
   position: absolute;
   inset: 0;
   background-image: 
-    linear-gradient(to right, rgba(0, 229, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(0, 229, 255, 0.03) 1px, transparent 1px);
-  background-size: 32px 32px;
+    radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 0),
+    linear-gradient(to right, rgba(0, 229, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 229, 255, 0.02) 1px, transparent 1px);
+  background-size: 24px 24px, 48px 48px, 48px 48px;
+  background-position: 0 0, 0 0, 0 0;
   pointer-events: none;
   z-index: 0;
 }
 
-/* Futuristic Scanline Animation */
+/* Subtle hardware chassis grill texture */
+.retro-chassis-texture {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.06) 1.2px, transparent 1.2px);
+  background-size: 8px 8px;
+}
+
+/* ==========================================================================
+   3D Neumorphism Utilities
+   ========================================================================== */
+/* Raised 3D Convex Plate */
+.neo-raised {
+  background: linear-gradient(145deg, #182030, #101622);
+  box-shadow: var(--neo-shadow-raised);
+  border-top: 1px solid var(--color-bevel-light);
+  border-left: 1px solid var(--color-bevel-light);
+  border-bottom: 1px solid var(--color-bevel-dark);
+  border-right: 1px solid var(--color-bevel-dark);
+}
+
+.neo-raised-lg {
+  background: linear-gradient(145deg, #1a2334, #0e131d);
+  box-shadow: var(--neo-shadow-raised-lg);
+  border-top: 1px solid var(--color-bevel-highlight);
+  border-left: 1px solid var(--color-bevel-highlight);
+  border-bottom: 1px solid #020305;
+  border-right: 1px solid #020305;
+}
+
+/* Sunken 3D Recessed Well / Tray */
+.neo-sunken {
+  background: #080b10;
+  box-shadow: var(--neo-shadow-sunken);
+  border-bottom: 1px solid var(--color-bevel-light);
+  border-right: 1px solid var(--color-bevel-light);
+  border-top: 1px solid #020305;
+  border-left: 1px solid #020305;
+}
+
+.neo-sunken-deep {
+  background: #05070a;
+  box-shadow: var(--neo-shadow-sunken-deep);
+  border-top: 1.5px solid #010204;
+  border-left: 1.5px solid #010204;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Embossed Hardware Text */
+.retro-embossed-text {
+  color: var(--color-text-primary);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9), 0 -1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.retro-sunken-text {
+  color: var(--color-text-secondary);
+  text-shadow: 0 -1px 1px rgba(0, 0, 0, 0.9), 0 1px 1px rgba(255, 255, 255, 0.08);
+}
+
+/* ==========================================================================
+   Retro Tactile 3D Buttons & Keycaps
+   ========================================================================== */
+.lookaremote-btn,
+.retro-btn {
+  position: relative;
+  border-style: solid;
+  border-width: 1px;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), background-color var(--transition-fast);
+}
+
+.lookaremote-btn:active,
+.retro-btn:active {
+  transform: translateY(3px) scale(0.985);
+}
+
+/* Retro Glass Jewel Indicator LED */
+.retro-led {
+  position: relative;
+  border-radius: 50%;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.8), 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+/* ==========================================================================
+   Animations
+   ========================================================================== */
 @keyframes scanline {
-  0% {
-    transform: translateY(0%);
-    opacity: 0.8;
-  }
-  50% {
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(100%);
-    opacity: 0.8;
-  }
+  0% { transform: translateY(0%); opacity: 0.7; }
+  50% { opacity: 1; }
+  100% { transform: translateY(100%); opacity: 0.7; }
 }
 
 .animate-scanline {
   animation: scanline 2.5s ease-in-out infinite alternate;
 }
 
-/* Pulse animation */
 @keyframes pulse-glow {
   0%, 100% {
-    opacity: 0.8;
-    filter: drop-shadow(0 0 4px var(--color-neon-cyan));
+    opacity: 0.85;
+    filter: drop-shadow(0 0 4px currentColor);
   }
   50% {
     opacity: 1;
-    filter: drop-shadow(0 0 12px var(--color-neon-cyan));
+    filter: drop-shadow(0 0 10px currentColor);
   }
 }
 
@@ -96,21 +181,27 @@ body {
   animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-/* Radar Sweep */
 @keyframes radar-sweep {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .animate-radar-sweep {
   animation: radar-sweep 2s linear infinite;
 }
 
-/* Typography Utilities */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+/* ==========================================================================
+   Typography & Focus Utilities
+   ========================================================================== */
 .font-mono {
   font-family: var(--font-mono);
 }
@@ -128,7 +219,6 @@ body {
   border-radius: 12px;
 }
 
-/* Focus styles */
 button:focus-visible,
 input:focus-visible {
   outline: 2px solid var(--color-neon-cyan);

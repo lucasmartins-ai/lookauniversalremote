@@ -10,7 +10,10 @@ use tracing::{debug, info};
 #[cfg(target_os = "linux")]
 use evdev::uinput::{VirtualDevice, VirtualDeviceBuilder};
 #[cfg(target_os = "linux")]
-use evdev::{AttributeSet, BusType, EventType, InputEvent as EvdevInputEvent, InputId, Key, SynchronizationCode};
+use evdev::{
+    AttributeSet, BusType, EventType, InputEvent as EvdevInputEvent, InputId, Key,
+    SynchronizationCode,
+};
 
 /// Abstract trait for OS virtual keyboard and consumer media drivers.
 pub trait VirtualKeyboardDriver: Send + Sync {
@@ -118,26 +121,100 @@ impl UInputKeyboardDriver {
 
         // Register Alphanumeric keys
         for key in [
-            Key::KEY_A, Key::KEY_B, Key::KEY_C, Key::KEY_D, Key::KEY_E, Key::KEY_F, Key::KEY_G,
-            Key::KEY_H, Key::KEY_I, Key::KEY_J, Key::KEY_K, Key::KEY_L, Key::KEY_M, Key::KEY_N,
-            Key::KEY_O, Key::KEY_P, Key::KEY_Q, Key::KEY_R, Key::KEY_S, Key::KEY_T, Key::KEY_U,
-            Key::KEY_V, Key::KEY_W, Key::KEY_X, Key::KEY_Y, Key::KEY_Z,
-            Key::KEY_1, Key::KEY_2, Key::KEY_3, Key::KEY_4, Key::KEY_5, Key::KEY_6, Key::KEY_7,
-            Key::KEY_8, Key::KEY_9, Key::KEY_0,
-            Key::KEY_ENTER, Key::KEY_ESC, Key::KEY_BACKSPACE, Key::KEY_TAB, Key::KEY_SPACE,
-            Key::KEY_MINUS, Key::KEY_EQUAL, Key::KEY_LEFTBRACE, Key::KEY_RIGHTBRACE, Key::KEY_BACKSLASH,
-            Key::KEY_SEMICOLON, Key::KEY_APOSTROPHE, Key::KEY_GRAVE, Key::KEY_COMMA, Key::KEY_DOT, Key::KEY_SLASH,
+            Key::KEY_A,
+            Key::KEY_B,
+            Key::KEY_C,
+            Key::KEY_D,
+            Key::KEY_E,
+            Key::KEY_F,
+            Key::KEY_G,
+            Key::KEY_H,
+            Key::KEY_I,
+            Key::KEY_J,
+            Key::KEY_K,
+            Key::KEY_L,
+            Key::KEY_M,
+            Key::KEY_N,
+            Key::KEY_O,
+            Key::KEY_P,
+            Key::KEY_Q,
+            Key::KEY_R,
+            Key::KEY_S,
+            Key::KEY_T,
+            Key::KEY_U,
+            Key::KEY_V,
+            Key::KEY_W,
+            Key::KEY_X,
+            Key::KEY_Y,
+            Key::KEY_Z,
+            Key::KEY_1,
+            Key::KEY_2,
+            Key::KEY_3,
+            Key::KEY_4,
+            Key::KEY_5,
+            Key::KEY_6,
+            Key::KEY_7,
+            Key::KEY_8,
+            Key::KEY_9,
+            Key::KEY_0,
+            Key::KEY_ENTER,
+            Key::KEY_ESC,
+            Key::KEY_BACKSPACE,
+            Key::KEY_TAB,
+            Key::KEY_SPACE,
+            Key::KEY_MINUS,
+            Key::KEY_EQUAL,
+            Key::KEY_LEFTBRACE,
+            Key::KEY_RIGHTBRACE,
+            Key::KEY_BACKSLASH,
+            Key::KEY_SEMICOLON,
+            Key::KEY_APOSTROPHE,
+            Key::KEY_GRAVE,
+            Key::KEY_COMMA,
+            Key::KEY_DOT,
+            Key::KEY_SLASH,
             Key::KEY_CAPSLOCK,
-            Key::KEY_F1, Key::KEY_F2, Key::KEY_F3, Key::KEY_F4, Key::KEY_F5, Key::KEY_F6,
-            Key::KEY_F7, Key::KEY_F8, Key::KEY_F9, Key::KEY_F10, Key::KEY_F11, Key::KEY_F12,
-            Key::KEY_PRINT, Key::KEY_SCROLLLOCK, Key::KEY_PAUSE, Key::KEY_INSERT, Key::KEY_HOME,
-            Key::KEY_PAGEUP, Key::KEY_DELETE, Key::KEY_END, Key::KEY_PAGEDOWN,
-            Key::KEY_RIGHT, Key::KEY_LEFT, Key::KEY_DOWN, Key::KEY_UP,
-            Key::KEY_LEFTCTRL, Key::KEY_LEFTSHIFT, Key::KEY_LEFTALT, Key::KEY_LEFTMETA,
-            Key::KEY_RIGHTCTRL, Key::KEY_RIGHTSHIFT, Key::KEY_RIGHTALT, Key::KEY_RIGHTMETA,
+            Key::KEY_F1,
+            Key::KEY_F2,
+            Key::KEY_F3,
+            Key::KEY_F4,
+            Key::KEY_F5,
+            Key::KEY_F6,
+            Key::KEY_F7,
+            Key::KEY_F8,
+            Key::KEY_F9,
+            Key::KEY_F10,
+            Key::KEY_F11,
+            Key::KEY_F12,
+            Key::KEY_PRINT,
+            Key::KEY_SCROLLLOCK,
+            Key::KEY_PAUSE,
+            Key::KEY_INSERT,
+            Key::KEY_HOME,
+            Key::KEY_PAGEUP,
+            Key::KEY_DELETE,
+            Key::KEY_END,
+            Key::KEY_PAGEDOWN,
+            Key::KEY_RIGHT,
+            Key::KEY_LEFT,
+            Key::KEY_DOWN,
+            Key::KEY_UP,
+            Key::KEY_LEFTCTRL,
+            Key::KEY_LEFTSHIFT,
+            Key::KEY_LEFTALT,
+            Key::KEY_LEFTMETA,
+            Key::KEY_RIGHTCTRL,
+            Key::KEY_RIGHTSHIFT,
+            Key::KEY_RIGHTALT,
+            Key::KEY_RIGHTMETA,
             // Consumer Media Keys
-            Key::KEY_PLAYPAUSE, Key::KEY_STOPCD, Key::KEY_NEXTSONG, Key::KEY_PREVIOUSSONG,
-            Key::KEY_VOLUMEUP, Key::KEY_VOLUMEDOWN, Key::KEY_MUTE,
+            Key::KEY_PLAYPAUSE,
+            Key::KEY_STOPCD,
+            Key::KEY_NEXTSONG,
+            Key::KEY_PREVIOUSSONG,
+            Key::KEY_VOLUMEUP,
+            Key::KEY_VOLUMEDOWN,
+            Key::KEY_MUTE,
         ] {
             keys.insert(key);
         }
@@ -145,13 +222,19 @@ impl UInputKeyboardDriver {
         let input_id = InputId::new(BusType::BUS_USB, 0x045e, 0x0041, 0x0111);
 
         let device = VirtualDeviceBuilder::new()
-            .map_err(|e| DriverError::DeviceNotFound(format!("Failed to open /dev/uinput for keyboard: {e}")))?
+            .map_err(|e| {
+                DriverError::DeviceNotFound(format!("Failed to open /dev/uinput for keyboard: {e}"))
+            })?
             .name("LookARemote Virtual Keyboard")
             .input_id(input_id)
             .with_keys(&keys)
             .map_err(|e| DriverError::Internal(format!("Failed to register keyboard keys: {e}")))?
             .build()
-            .map_err(|e| DriverError::PermissionDenied(format!("Failed to build uinput virtual keyboard: {e}")))?;
+            .map_err(|e| {
+                DriverError::PermissionDenied(format!(
+                    "Failed to build uinput virtual keyboard: {e}"
+                ))
+            })?;
 
         info!("Successfully created Linux /dev/uinput virtual keyboard");
         Ok(Self {
@@ -307,7 +390,11 @@ impl VirtualKeyboardDriver for UInputKeyboardDriver {
             events.push(EvdevInputEvent::new(EventType::KEY, key.code(), ev_val));
         }
 
-        events.push(EvdevInputEvent::new(EventType::SYNCHRONIZATION, SynchronizationCode::SYN_REPORT.0, 0));
+        events.push(EvdevInputEvent::new(
+            EventType::SYNCHRONIZATION,
+            SynchronizationCode::SYN_REPORT.0,
+            0,
+        ));
 
         self.device.emit(&events).map_err(DriverError::Io)?;
         Ok(())
@@ -318,9 +405,17 @@ impl VirtualKeyboardDriver for UInputKeyboardDriver {
             // Pulse: Key Down followed by Key Up
             let events = [
                 EvdevInputEvent::new(EventType::KEY, key.code(), 1),
-                EvdevInputEvent::new(EventType::SYNCHRONIZATION, SynchronizationCode::SYN_REPORT.0, 0),
+                EvdevInputEvent::new(
+                    EventType::SYNCHRONIZATION,
+                    SynchronizationCode::SYN_REPORT.0,
+                    0,
+                ),
                 EvdevInputEvent::new(EventType::KEY, key.code(), 0),
-                EvdevInputEvent::new(EventType::SYNCHRONIZATION, SynchronizationCode::SYN_REPORT.0, 0),
+                EvdevInputEvent::new(
+                    EventType::SYNCHRONIZATION,
+                    SynchronizationCode::SYN_REPORT.0,
+                    0,
+                ),
             ];
 
             self.device.emit(&events).map_err(DriverError::Io)?;
@@ -337,7 +432,11 @@ impl VirtualKeyboardDriver for UInputKeyboardDriver {
         for key in self.pressed_keys.drain() {
             events.push(EvdevInputEvent::new(EventType::KEY, key.code(), 0));
         }
-        events.push(EvdevInputEvent::new(EventType::SYNCHRONIZATION, SynchronizationCode::SYN_REPORT.0, 0));
+        events.push(EvdevInputEvent::new(
+            EventType::SYNCHRONIZATION,
+            SynchronizationCode::SYN_REPORT.0,
+            0,
+        ));
 
         self.device.emit(&events).map_err(DriverError::Io)?;
         Ok(())

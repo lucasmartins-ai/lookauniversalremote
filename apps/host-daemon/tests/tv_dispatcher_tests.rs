@@ -99,7 +99,9 @@ fn test_input_router_tv_command_and_text_dispatch() {
 
     // 2. Dispatch TV Text Input
     let tv_txt = TvTextInputMessage::from_str_truncate("Breaking Bad");
-    router.route_event(&InputEvent::TvTextInput(tv_txt)).unwrap();
+    router
+        .route_event(&InputEvent::TvTextInput(tv_txt))
+        .unwrap();
     assert_eq!(dispatcher.lock().unwrap().total_text_inputs(), 1);
 
     // 3. Dispatch Desktop PC/Mac fallback Volume Up

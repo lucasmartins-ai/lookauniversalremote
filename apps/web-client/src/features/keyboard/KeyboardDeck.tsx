@@ -31,32 +31,26 @@ export interface KeyboardDeckProps {
 }
 
 export const KeyboardDeck: React.FC<KeyboardDeckProps> = ({ bridge }) => {
-  // Sticky Modifier States
   const [ctrlActive, setCtrlActive] = useState(false);
   const [shiftActive, setShiftActive] = useState(false);
   const [altActive, setAltActive] = useState(false);
   const [metaActive, setMetaActive] = useState(false);
 
-  // Hidden text input ref for mobile native keyboard capture
   const hiddenInputRef = useRef<HTMLInputElement>(null);
   const [isInputFocused, setIsInputFocused] = useState(false);
 
-  // Current active modifier mask
   const activeModifiers = buildModifierMask(ctrlActive, shiftActive, altActive, metaActive);
 
-  // Sends key tap (Down then Up)
   const sendKeyTap = (keyCode: number, additionalModifiers = 0) => {
     haptics.buttonClick();
     const finalModifiers = activeModifiers | additionalModifiers;
 
-    // Send Key Down
     bridge.sendKeyboard({
       keyCode,
       state: KeyState.KEY_DOWN,
       modifiers: finalModifiers,
     });
 
-    // Send Key Up after short delay
     setTimeout(() => {
       bridge.sendKeyboard({
         keyCode,
@@ -66,7 +60,6 @@ export const KeyboardDeck: React.FC<KeyboardDeckProps> = ({ bridge }) => {
     }, 40);
   };
 
-  // Sends a key combination macro (e.g. Ctrl + C)
   const sendMacro = (keyCode: number, modifierBit: number) => {
     haptics.buttonClick();
     const finalModifiers = activeModifiers | modifierBit;
@@ -86,7 +79,6 @@ export const KeyboardDeck: React.FC<KeyboardDeckProps> = ({ bridge }) => {
     }, 50);
   };
 
-  // Handle native typing from hidden input
   const handleKeyDownCapture = (e: React.KeyboardEvent<HTMLInputElement>) => {
     const hidCode = DOM_CODE_TO_HID[e.code];
     if (hidCode) {
@@ -120,7 +112,6 @@ export const KeyboardDeck: React.FC<KeyboardDeckProps> = ({ bridge }) => {
     const newState = !current;
     setter(newState);
 
-    // Send modifier key state to host
     let hidCode: number = HidKey.CONTROL_LEFT;
     let bit: number = ModifierMask.CTRL;
     if (type === 'shift') {
@@ -146,41 +137,65 @@ export const KeyboardDeck: React.FC<KeyboardDeckProps> = ({ bridge }) => {
       style={{
         display: 'flex',
         flexDirection: 'column',
-        gap: '10px',
+        gap: '12px',
         width: '100%',
         height: '100%',
         overflowY: 'auto',
       }}
     >
-      {/* 1. NATIVE KEYBOARD INPUT BRIDGE */}
+      {/* 1. NATIVE KEYBOARD INPUT BRIDGE (3D Beveled Deck) */}
       <div
         onClick={() => hiddenInputRef.current?.focus()}
+        className={isInputFocused ? 'neo-raised-lg' : 'neo-raised'}
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: '12px 16px',
-          borderRadius: '12px',
-          backgroundColor: isInputFocused ? 'rgba(0, 229, 255, 0.12)' : 'var(--color-surface-card)',
-          border: `1px solid ${isInputFocused ? 'var(--color-neon-cyan)' : 'var(--color-border-accent)'}`,
-          boxShadow: isInputFocused ? '0 0 16px var(--color-neon-cyan-glow)' : 'none',
+          borderRadius: '14px',
           cursor: 'pointer',
-          transition: 'all var(--transition-fast)',
+          border: isInputFocused ? '1.5px solid var(--color-neon-cyan)' : '1px solid rgba(255, 255, 255, 0.1)',
+          boxShadow: isInputFocused ? '0 0 16px rgba(0, 229, 255, 0.35), var(--neo-shadow-raised-lg)' : 'var(--neo-shadow-raised)',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <KeyboardIcon size={20} color={isInputFocused ? 'var(--color-neon-cyan)' : 'var(--color-text-secondary)'} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div
+            className="retro-led"
+            style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '8px',
+              background: isInputFocused
+                ? 'linear-gradient(180deg, #00f0ff 0%, #008ba3 100%)'
+                : 'linear-gradient(180deg, #222d42 0%, #161e2e 100%)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: isInputFocused ? '0 0 12px var(--color-neon-cyan)' : 'none',
+            }}
+          >
+            <KeyboardIcon size={20} color={isInputFocused ? '#040d1a' : 'var(--color-neon-cyan)'} />
+          </div>
           <div>
-            <div style={{ fontSize: '0.85rem', fontWeight: 700, color: isInputFocused ? 'var(--color-neon-cyan)' : '#ffffff' }}>
-              {isInputFocused ? 'SYSTEM KEYBOARD ACTIVE (TYPE ANYWHERE)' : 'TAP TO OPEN SYSTEM KEYBOARD'}
+            <div
+              className="retro-embossed-text"
+              style={{
+                fontSize: '0.9rem',
+                fontWeight: 800,
+                color: isInputFocused ? 'var(--color-neon-cyan)' : '#ffffff',
+                fontFamily: 'var(--font-display)',
+                letterSpacing: '0.06em',
+              }}
+            >
+              {isInputFocused ? 'TECLADO DO SISTEMA ATIVO (DIGITAÇÃO DIRETA)' : 'TOQUE PARA ABRIR TECLADO DO CELULAR'}
             </div>
             <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', fontFamily: 'var(--font-mono)' }}>
-              Captures all smartphone IME typing, accents & unicode
+              Captura acentos, emojis e digitação IME do smartphone
             </div>
           </div>
         </div>
 
-        {/* Hidden Input field for mobile soft keyboard capture */}
         <input
           ref={hiddenInputRef}
           type="text"
@@ -204,97 +219,67 @@ export const KeyboardDeck: React.FC<KeyboardDeckProps> = ({ bridge }) => {
           style={{
             fontFamily: 'var(--font-mono)',
             fontSize: '0.75rem',
-            padding: '4px 8px',
-            borderRadius: '6px',
-            backgroundColor: isInputFocused ? 'var(--color-neon-cyan)' : 'rgba(255, 255, 255, 0.05)',
-            color: isInputFocused ? '#000000' : 'var(--color-text-muted)',
-            fontWeight: 700,
+            padding: '4px 10px',
+            borderRadius: '8px',
+            background: isInputFocused ? 'linear-gradient(180deg, #00f0ff 0%, #008ba3 100%)' : '#0a0e16',
+            color: isInputFocused ? '#040d1a' : 'var(--color-text-muted)',
+            fontWeight: 800,
+            border: isInputFocused ? 'none' : '1px solid rgba(255, 255, 255, 0.1)',
           }}
         >
-          {isInputFocused ? 'FOCUSED' : 'TAP HERE'}
+          {isInputFocused ? 'ATIVO' : 'ABRIR'}
         </span>
       </div>
 
-      {/* 2. STICKY MODIFIERS ROW */}
+      {/* 2. 3D STICKY MODIFIERS ROW */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
-        <button
-          type="button"
-          onClick={() => toggleModifier('ctrl', setCtrlActive, ctrlActive)}
-          style={{
-            padding: '10px 4px',
-            borderRadius: '8px',
-            backgroundColor: ctrlActive ? 'rgba(0, 229, 255, 0.2)' : 'var(--color-surface-card)',
-            border: `1px solid ${ctrlActive ? 'var(--color-neon-cyan)' : 'var(--color-border-subtle)'}`,
-            boxShadow: ctrlActive ? '0 0 12px var(--color-neon-cyan-glow)' : 'none',
-            color: ctrlActive ? 'var(--color-neon-cyan)' : 'var(--color-text-secondary)',
-            fontFamily: 'var(--font-mono)',
-            fontSize: '0.8rem',
-            fontWeight: 700,
-            cursor: 'pointer',
-          }}
-        >
-          CTRL {ctrlActive ? '●' : '○'}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => toggleModifier('alt', setAltActive, altActive)}
-          style={{
-            padding: '10px 4px',
-            borderRadius: '8px',
-            backgroundColor: altActive ? 'rgba(0, 229, 255, 0.2)' : 'var(--color-surface-card)',
-            border: `1px solid ${altActive ? 'var(--color-neon-cyan)' : 'var(--color-border-subtle)'}`,
-            boxShadow: altActive ? '0 0 12px var(--color-neon-cyan-glow)' : 'none',
-            color: altActive ? 'var(--color-neon-cyan)' : 'var(--color-text-secondary)',
-            fontFamily: 'var(--font-mono)',
-            fontSize: '0.8rem',
-            fontWeight: 700,
-            cursor: 'pointer',
-          }}
-        >
-          ALT {altActive ? '●' : '○'}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => toggleModifier('shift', setShiftActive, shiftActive)}
-          style={{
-            padding: '10px 4px',
-            borderRadius: '8px',
-            backgroundColor: shiftActive ? 'rgba(0, 229, 255, 0.2)' : 'var(--color-surface-card)',
-            border: `1px solid ${shiftActive ? 'var(--color-neon-cyan)' : 'var(--color-border-subtle)'}`,
-            boxShadow: shiftActive ? '0 0 12px var(--color-neon-cyan-glow)' : 'none',
-            color: shiftActive ? 'var(--color-neon-cyan)' : 'var(--color-text-secondary)',
-            fontFamily: 'var(--font-mono)',
-            fontSize: '0.8rem',
-            fontWeight: 700,
-            cursor: 'pointer',
-          }}
-        >
-          SHIFT {shiftActive ? '●' : '○'}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => toggleModifier('meta', setMetaActive, metaActive)}
-          style={{
-            padding: '10px 4px',
-            borderRadius: '8px',
-            backgroundColor: metaActive ? 'rgba(0, 229, 255, 0.2)' : 'var(--color-surface-card)',
-            border: `1px solid ${metaActive ? 'var(--color-neon-cyan)' : 'var(--color-border-subtle)'}`,
-            boxShadow: metaActive ? '0 0 12px var(--color-neon-cyan-glow)' : 'none',
-            color: metaActive ? 'var(--color-neon-cyan)' : 'var(--color-text-secondary)',
-            fontFamily: 'var(--font-mono)',
-            fontSize: '0.8rem',
-            fontWeight: 700,
-            cursor: 'pointer',
-          }}
-        >
-          WIN/CMD {metaActive ? '●' : '○'}
-        </button>
+        {[
+          { label: 'CTRL', active: ctrlActive, type: 'ctrl' as const, setter: setCtrlActive },
+          { label: 'ALT', active: altActive, type: 'alt' as const, setter: setAltActive },
+          { label: 'SHIFT', active: shiftActive, type: 'shift' as const, setter: setShiftActive },
+          { label: 'WIN/CMD', active: metaActive, type: 'meta' as const, setter: setMetaActive },
+        ].map((mod) => (
+          <button
+            key={mod.label}
+            type="button"
+            onClick={() => toggleModifier(mod.type, mod.setter, mod.active)}
+            className="lookaremote-btn retro-btn"
+            style={{
+              padding: '10px 4px',
+              borderRadius: '9px',
+              background: mod.active
+                ? 'linear-gradient(180deg, #00f0ff 0%, #00b4d8 50%, #007791 100%)'
+                : 'linear-gradient(180deg, #222d42 0%, #161e2e 100%)',
+              border: `1.5px solid ${mod.active ? '#00f0ff' : 'rgba(255, 255, 255, 0.12)'}`,
+              boxShadow: mod.active
+                ? 'var(--neo-shadow-button-cyan-pressed)'
+                : 'var(--neo-shadow-button-slate)',
+              color: mod.active ? '#040d1a' : 'var(--color-text-primary)',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '0.8rem',
+              fontWeight: 800,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '4px',
+            }}
+          >
+            <span>{mod.label}</span>
+            <span
+              className="retro-led"
+              style={{
+                width: '6px',
+                height: '6px',
+                borderRadius: '50%',
+                backgroundColor: mod.active ? '#040d1a' : 'rgba(255, 255, 255, 0.2)',
+                boxShadow: mod.active ? '0 0 6px #040d1a' : 'none',
+              }}
+            />
+          </button>
+        ))}
       </div>
 
-      {/* 3. PRODUCTIVITY MACRO SHORTCUTS */}
+      {/* 3. PRODUCTIVITY MACRO SHORTCUTS (3D Keycaps) */}
       <div
         style={{
           display: 'grid',
@@ -305,20 +290,21 @@ export const KeyboardDeck: React.FC<KeyboardDeckProps> = ({ bridge }) => {
         <button
           type="button"
           onClick={() => sendMacro(HidKey.C, ModifierMask.CTRL)}
+          className="lookaremote-btn retro-btn"
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             gap: '4px',
             padding: '10px 4px',
-            borderRadius: '8px',
-            backgroundColor: 'var(--color-surface-card)',
-            border: '1px solid var(--color-border-subtle)',
+            borderRadius: '9px',
+            background: 'linear-gradient(180deg, #222d42 0%, #161e2e 100%)',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
             color: 'var(--color-text-primary)',
             fontFamily: 'var(--font-mono)',
             fontSize: '0.75rem',
-            fontWeight: 600,
-            cursor: 'pointer',
+            fontWeight: 800,
+            boxShadow: 'var(--neo-shadow-button-slate)',
           }}
         >
           <Copy size={13} color="var(--color-neon-cyan)" /> COPY
@@ -327,20 +313,21 @@ export const KeyboardDeck: React.FC<KeyboardDeckProps> = ({ bridge }) => {
         <button
           type="button"
           onClick={() => sendMacro(HidKey.V, ModifierMask.CTRL)}
+          className="lookaremote-btn retro-btn"
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             gap: '4px',
             padding: '10px 4px',
-            borderRadius: '8px',
-            backgroundColor: 'var(--color-surface-card)',
-            border: '1px solid var(--color-border-subtle)',
+            borderRadius: '9px',
+            background: 'linear-gradient(180deg, #222d42 0%, #161e2e 100%)',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
             color: 'var(--color-text-primary)',
             fontFamily: 'var(--font-mono)',
             fontSize: '0.75rem',
-            fontWeight: 600,
-            cursor: 'pointer',
+            fontWeight: 800,
+            boxShadow: 'var(--neo-shadow-button-slate)',
           }}
         >
           <ClipboardPaste size={13} color="var(--color-neon-cyan)" /> PASTE
@@ -349,20 +336,21 @@ export const KeyboardDeck: React.FC<KeyboardDeckProps> = ({ bridge }) => {
         <button
           type="button"
           onClick={() => sendMacro(HidKey.Z, ModifierMask.CTRL)}
+          className="lookaremote-btn retro-btn"
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             gap: '4px',
             padding: '10px 4px',
-            borderRadius: '8px',
-            backgroundColor: 'var(--color-surface-card)',
-            border: '1px solid var(--color-border-subtle)',
+            borderRadius: '9px',
+            background: 'linear-gradient(180deg, #222d42 0%, #161e2e 100%)',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
             color: 'var(--color-text-primary)',
             fontFamily: 'var(--font-mono)',
             fontSize: '0.75rem',
-            fontWeight: 600,
-            cursor: 'pointer',
+            fontWeight: 800,
+            boxShadow: 'var(--neo-shadow-button-slate)',
           }}
         >
           <Undo2 size={13} color="var(--color-neon-amber)" /> UNDO
@@ -371,20 +359,21 @@ export const KeyboardDeck: React.FC<KeyboardDeckProps> = ({ bridge }) => {
         <button
           type="button"
           onClick={() => sendMacro(HidKey.Y, ModifierMask.CTRL)}
+          className="lookaremote-btn retro-btn"
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             gap: '4px',
             padding: '10px 4px',
-            borderRadius: '8px',
-            backgroundColor: 'var(--color-surface-card)',
-            border: '1px solid var(--color-border-subtle)',
+            borderRadius: '9px',
+            background: 'linear-gradient(180deg, #222d42 0%, #161e2e 100%)',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
             color: 'var(--color-text-primary)',
             fontFamily: 'var(--font-mono)',
             fontSize: '0.75rem',
-            fontWeight: 600,
-            cursor: 'pointer',
+            fontWeight: 800,
+            boxShadow: 'var(--neo-shadow-button-slate)',
           }}
         >
           <Redo2 size={13} color="var(--color-neon-amber)" /> REDO
@@ -393,16 +382,17 @@ export const KeyboardDeck: React.FC<KeyboardDeckProps> = ({ bridge }) => {
         <button
           type="button"
           onClick={() => sendMacro(HidKey.TAB, ModifierMask.ALT)}
+          className="lookaremote-btn retro-btn"
           style={{
             padding: '10px 4px',
-            borderRadius: '8px',
-            backgroundColor: 'var(--color-surface-card)',
-            border: '1px solid var(--color-border-subtle)',
+            borderRadius: '9px',
+            background: 'linear-gradient(180deg, #222d42 0%, #161e2e 100%)',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
             color: 'var(--color-text-primary)',
             fontFamily: 'var(--font-mono)',
             fontSize: '0.75rem',
-            fontWeight: 600,
-            cursor: 'pointer',
+            fontWeight: 800,
+            boxShadow: 'var(--neo-shadow-button-slate)',
           }}
         >
           ALT + TAB
@@ -411,20 +401,21 @@ export const KeyboardDeck: React.FC<KeyboardDeckProps> = ({ bridge }) => {
         <button
           type="button"
           onClick={() => sendMacro(HidKey.D, ModifierMask.META)}
+          className="lookaremote-btn retro-btn"
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             gap: '4px',
             padding: '10px 4px',
-            borderRadius: '8px',
-            backgroundColor: 'var(--color-surface-card)',
-            border: '1px solid var(--color-border-subtle)',
+            borderRadius: '9px',
+            background: 'linear-gradient(180deg, #222d42 0%, #161e2e 100%)',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
             color: 'var(--color-text-primary)',
             fontFamily: 'var(--font-mono)',
             fontSize: '0.75rem',
-            fontWeight: 600,
-            cursor: 'pointer',
+            fontWeight: 800,
+            boxShadow: 'var(--neo-shadow-button-slate)',
           }}
         >
           <Monitor size={13} color="var(--color-neon-green)" /> DESKTOP
@@ -433,38 +424,40 @@ export const KeyboardDeck: React.FC<KeyboardDeckProps> = ({ bridge }) => {
         <button
           type="button"
           onClick={() => sendMacro(HidKey.A, ModifierMask.CTRL)}
+          className="lookaremote-btn retro-btn"
           style={{
             padding: '10px 4px',
-            borderRadius: '8px',
-            backgroundColor: 'var(--color-surface-card)',
-            border: '1px solid var(--color-border-subtle)',
+            borderRadius: '9px',
+            background: 'linear-gradient(180deg, #222d42 0%, #161e2e 100%)',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
             color: 'var(--color-text-primary)',
             fontFamily: 'var(--font-mono)',
             fontSize: '0.75rem',
-            fontWeight: 600,
-            cursor: 'pointer',
+            fontWeight: 800,
+            boxShadow: 'var(--neo-shadow-button-slate)',
           }}
         >
-          SELECT ALL
+          SEL ALL
         </button>
 
         <button
           type="button"
           onClick={() => sendMacro(HidKey.F4, ModifierMask.ALT)}
+          className="lookaremote-btn retro-btn"
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             gap: '4px',
             padding: '10px 4px',
-            borderRadius: '8px',
-            backgroundColor: 'var(--color-surface-card)',
-            border: '1px solid rgba(255, 23, 68, 0.3)',
-            color: 'var(--color-neon-red)',
+            borderRadius: '9px',
+            background: 'linear-gradient(180deg, #ff3366 0%, #9e0c29 100%)',
+            border: '1px solid #ff3366',
+            color: '#ffffff',
             fontFamily: 'var(--font-mono)',
             fontSize: '0.75rem',
-            fontWeight: 600,
-            cursor: 'pointer',
+            fontWeight: 800,
+            boxShadow: 'var(--neo-shadow-button-red)',
           }}
         >
           <XSquare size={13} /> ALT + F4
@@ -497,16 +490,17 @@ export const KeyboardDeck: React.FC<KeyboardDeckProps> = ({ bridge }) => {
             key={f.label}
             type="button"
             onClick={() => sendKeyTap(f.code)}
+            className="lookaremote-btn retro-btn"
             style={{
               padding: '8px 2px',
-              borderRadius: '6px',
-              backgroundColor: 'var(--color-surface-card)',
-              border: '1px solid var(--color-border-subtle)',
+              borderRadius: '7px',
+              background: 'linear-gradient(180deg, #222d42 0%, #161e2e 100%)',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
               color: 'var(--color-text-secondary)',
               fontFamily: 'var(--font-mono)',
               fontSize: '0.75rem',
-              fontWeight: 700,
-              cursor: 'pointer',
+              fontWeight: 800,
+              boxShadow: 'var(--neo-shadow-button-slate)',
             }}
           >
             {f.label}
@@ -519,16 +513,17 @@ export const KeyboardDeck: React.FC<KeyboardDeckProps> = ({ bridge }) => {
         <button
           type="button"
           onClick={() => sendKeyTap(HidKey.ESCAPE)}
+          className="lookaremote-btn retro-btn"
           style={{
             padding: '12px 6px',
-            borderRadius: '8px',
-            backgroundColor: 'var(--color-surface-card)',
-            border: '1px solid var(--color-border-subtle)',
-            color: 'var(--color-neon-amber)',
+            borderRadius: '9px',
+            background: 'linear-gradient(180deg, #ffc01e 0%, #b36b00 100%)',
+            border: '1px solid #ffc01e',
+            color: '#1a0e00',
             fontFamily: 'var(--font-mono)',
-            fontSize: '0.8rem',
-            fontWeight: 700,
-            cursor: 'pointer',
+            fontSize: '0.82rem',
+            fontWeight: 900,
+            boxShadow: 'var(--neo-shadow-button-amber)',
           }}
         >
           ESC
@@ -537,16 +532,17 @@ export const KeyboardDeck: React.FC<KeyboardDeckProps> = ({ bridge }) => {
         <button
           type="button"
           onClick={() => sendKeyTap(HidKey.TAB)}
+          className="lookaremote-btn retro-btn"
           style={{
             padding: '12px 6px',
-            borderRadius: '8px',
-            backgroundColor: 'var(--color-surface-card)',
-            border: '1px solid var(--color-border-subtle)',
+            borderRadius: '9px',
+            background: 'linear-gradient(180deg, #222d42 0%, #161e2e 100%)',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
             color: 'var(--color-text-primary)',
             fontFamily: 'var(--font-mono)',
-            fontSize: '0.8rem',
-            fontWeight: 700,
-            cursor: 'pointer',
+            fontSize: '0.82rem',
+            fontWeight: 800,
+            boxShadow: 'var(--neo-shadow-button-slate)',
           }}
         >
           TAB
@@ -555,20 +551,21 @@ export const KeyboardDeck: React.FC<KeyboardDeckProps> = ({ bridge }) => {
         <button
           type="button"
           onClick={() => sendKeyTap(HidKey.BACKSPACE)}
+          className="lookaremote-btn retro-btn"
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             gap: '4px',
             padding: '12px 6px',
-            borderRadius: '8px',
-            backgroundColor: 'var(--color-surface-card)',
-            border: '1px solid var(--color-border-subtle)',
+            borderRadius: '9px',
+            background: 'linear-gradient(180deg, #222d42 0%, #161e2e 100%)',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
             color: 'var(--color-text-primary)',
             fontFamily: 'var(--font-mono)',
-            fontSize: '0.75rem',
-            fontWeight: 700,
-            cursor: 'pointer',
+            fontSize: '0.78rem',
+            fontWeight: 800,
+            boxShadow: 'var(--neo-shadow-button-slate)',
           }}
         >
           <Delete size={15} /> BKSP
@@ -577,16 +574,17 @@ export const KeyboardDeck: React.FC<KeyboardDeckProps> = ({ bridge }) => {
         <button
           type="button"
           onClick={() => sendKeyTap(HidKey.DELETE)}
+          className="lookaremote-btn retro-btn"
           style={{
             padding: '12px 6px',
-            borderRadius: '8px',
-            backgroundColor: 'var(--color-surface-card)',
-            border: '1px solid var(--color-border-subtle)',
-            color: 'var(--color-neon-red)',
+            borderRadius: '9px',
+            background: 'linear-gradient(180deg, #ff3366 0%, #9e0c29 100%)',
+            border: '1px solid #ff3366',
+            color: '#ffffff',
             fontFamily: 'var(--font-mono)',
-            fontSize: '0.8rem',
-            fontWeight: 700,
-            cursor: 'pointer',
+            fontSize: '0.82rem',
+            fontWeight: 900,
+            boxShadow: 'var(--neo-shadow-button-red)',
           }}
         >
           DEL
@@ -599,40 +597,42 @@ export const KeyboardDeck: React.FC<KeyboardDeckProps> = ({ bridge }) => {
         <button
           type="button"
           onClick={() => sendKeyTap(HidKey.SPACE)}
+          className="lookaremote-btn retro-btn"
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             gap: '6px',
             padding: '16px 8px',
-            borderRadius: '10px',
-            backgroundColor: 'var(--color-surface-card)',
-            border: '1px solid var(--color-border-subtle)',
+            borderRadius: '12px',
+            background: 'linear-gradient(180deg, #222d42 0%, #161e2e 100%)',
+            border: '1px solid rgba(255, 255, 255, 0.15)',
             color: 'var(--color-text-primary)',
             fontFamily: 'var(--font-mono)',
-            fontSize: '0.85rem',
-            fontWeight: 700,
-            cursor: 'pointer',
+            fontSize: '0.9rem',
+            fontWeight: 800,
+            boxShadow: 'var(--neo-shadow-button-slate)',
           }}
         >
-          <Space size={16} /> SPACE
+          <Space size={17} /> SPACE
         </button>
 
-        {/* 4-Way Arrow Grid */}
+        {/* 4-Way Arrow Cluster */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center' }}>
           <button
             type="button"
             onClick={() => sendKeyTap(HidKey.ARROW_UP)}
+            className="lookaremote-btn retro-btn"
             style={{
               width: '100%',
               padding: '6px',
-              borderRadius: '6px',
-              backgroundColor: 'var(--color-surface-card)',
-              border: '1px solid var(--color-border-subtle)',
+              borderRadius: '7px',
+              background: 'linear-gradient(180deg, #222d42 0%, #161e2e 100%)',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
               color: 'var(--color-neon-cyan)',
               display: 'flex',
               justifyContent: 'center',
-              cursor: 'pointer',
+              boxShadow: 'var(--neo-shadow-button-slate)',
             }}
           >
             <ArrowUp size={16} />
@@ -641,15 +641,16 @@ export const KeyboardDeck: React.FC<KeyboardDeckProps> = ({ bridge }) => {
             <button
               type="button"
               onClick={() => sendKeyTap(HidKey.ARROW_LEFT)}
+              className="lookaremote-btn retro-btn"
               style={{
                 padding: '6px',
-                borderRadius: '6px',
-                backgroundColor: 'var(--color-surface-card)',
-                border: '1px solid var(--color-border-subtle)',
+                borderRadius: '7px',
+                background: 'linear-gradient(180deg, #222d42 0%, #161e2e 100%)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
                 color: 'var(--color-neon-cyan)',
                 display: 'flex',
                 justifyContent: 'center',
-                cursor: 'pointer',
+                boxShadow: 'var(--neo-shadow-button-slate)',
               }}
             >
               <ArrowLeft size={16} />
@@ -657,15 +658,16 @@ export const KeyboardDeck: React.FC<KeyboardDeckProps> = ({ bridge }) => {
             <button
               type="button"
               onClick={() => sendKeyTap(HidKey.ARROW_DOWN)}
+              className="lookaremote-btn retro-btn"
               style={{
                 padding: '6px',
-                borderRadius: '6px',
-                backgroundColor: 'var(--color-surface-card)',
-                border: '1px solid var(--color-border-subtle)',
+                borderRadius: '7px',
+                background: 'linear-gradient(180deg, #222d42 0%, #161e2e 100%)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
                 color: 'var(--color-neon-cyan)',
                 display: 'flex',
                 justifyContent: 'center',
-                cursor: 'pointer',
+                boxShadow: 'var(--neo-shadow-button-slate)',
               }}
             >
               <ArrowDown size={16} />
@@ -673,15 +675,16 @@ export const KeyboardDeck: React.FC<KeyboardDeckProps> = ({ bridge }) => {
             <button
               type="button"
               onClick={() => sendKeyTap(HidKey.ARROW_RIGHT)}
+              className="lookaremote-btn retro-btn"
               style={{
                 padding: '6px',
-                borderRadius: '6px',
-                backgroundColor: 'var(--color-surface-card)',
-                border: '1px solid var(--color-border-subtle)',
+                borderRadius: '7px',
+                background: 'linear-gradient(180deg, #222d42 0%, #161e2e 100%)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
                 color: 'var(--color-neon-cyan)',
                 display: 'flex',
                 justifyContent: 'center',
-                cursor: 'pointer',
+                boxShadow: 'var(--neo-shadow-button-slate)',
               }}
             >
               <ArrowRight size={16} />
@@ -693,24 +696,24 @@ export const KeyboardDeck: React.FC<KeyboardDeckProps> = ({ bridge }) => {
         <button
           type="button"
           onClick={() => sendKeyTap(HidKey.ENTER)}
+          className="lookaremote-btn retro-btn"
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             gap: '6px',
             padding: '16px 8px',
-            borderRadius: '10px',
-            backgroundColor: 'rgba(0, 229, 255, 0.15)',
-            border: '1px solid var(--color-neon-cyan)',
-            boxShadow: '0 0 12px var(--color-neon-cyan-glow)',
-            color: 'var(--color-neon-cyan)',
+            borderRadius: '12px',
+            background: 'linear-gradient(180deg, #00f0ff 0%, #00b4d8 50%, #007791 100%)',
+            border: '1.5px solid #00f0ff',
+            color: '#040d1a',
             fontFamily: 'var(--font-mono)',
-            fontSize: '0.85rem',
-            fontWeight: 700,
-            cursor: 'pointer',
+            fontSize: '0.9rem',
+            fontWeight: 900,
+            boxShadow: 'var(--neo-shadow-button-cyan)',
           }}
         >
-          <CornerDownLeft size={16} /> ENTER
+          <CornerDownLeft size={17} /> ENTER
         </button>
       </div>
     </div>

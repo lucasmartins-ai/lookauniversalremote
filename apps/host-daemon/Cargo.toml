@@ -26,6 +26,7 @@ futures-util = "0.3"
 bytes = "1.10"
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 tokio-tungstenite = "0.26"
+async-trait = "0.1"
 
 # Security & Cryptography
 x25519-dalek = { version = "2.0", features = ["static_secrets"] }

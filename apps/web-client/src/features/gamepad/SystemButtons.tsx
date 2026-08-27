@@ -37,32 +37,13 @@ export const SystemButtons: React.FC<SystemButtonsProps> = ({ onButtonChange }) 
     };
   }, []);
 
-  const buttonStyle: React.CSSProperties = {
-    padding: '6px 10px',
-    borderRadius: '6px',
-    backgroundColor: 'rgba(15, 20, 28, 0.85)',
-    border: '1px solid rgba(255, 255, 255, 0.15)',
-    color: 'var(--color-text-secondary)',
-    fontFamily: 'var(--font-mono)',
-    fontSize: '0.7rem',
-    fontWeight: 600,
-    letterSpacing: '0.05em',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '5px',
-    cursor: 'pointer',
-    touchAction: 'none',
-    userSelect: 'none',
-    transition: 'background-color 0.1s ease, color 0.1s ease, border-color 0.1s ease',
-  };
-
   return (
     <div
       style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: '8px',
+        gap: '6px',
         touchAction: 'none',
         userSelect: 'none',
       }}
@@ -70,7 +51,21 @@ export const SystemButtons: React.FC<SystemButtonsProps> = ({ onButtonChange }) 
       {/* L3 Quick Click */}
       <button
         {...createPointerHandlers(GamepadButtonMask.BTN_L3)}
-        style={buttonStyle}
+        className="lookaremote-btn retro-btn"
+        style={{
+          padding: '6px 10px',
+          borderRadius: '7px',
+          background: 'linear-gradient(180deg, #222d42 0%, #161e2e 100%)',
+          border: '1px solid rgba(255, 255, 255, 0.12)',
+          color: 'var(--color-text-secondary)',
+          fontFamily: 'var(--font-mono)',
+          fontSize: '0.7rem',
+          fontWeight: 700,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '4px',
+          boxShadow: 'var(--neo-shadow-button-slate)',
+        }}
         aria-label="L3 Stick Click"
       >
         <Crosshair size={12} />
@@ -80,37 +75,67 @@ export const SystemButtons: React.FC<SystemButtonsProps> = ({ onButtonChange }) 
       {/* Select / Back */}
       <button
         {...createPointerHandlers(GamepadButtonMask.BTN_SELECT)}
-        style={buttonStyle}
+        className="lookaremote-btn retro-btn"
+        style={{
+          padding: '6px 10px',
+          borderRadius: '7px',
+          background: 'linear-gradient(180deg, #222d42 0%, #161e2e 100%)',
+          border: '1px solid rgba(255, 255, 255, 0.12)',
+          color: 'var(--color-text-secondary)',
+          fontFamily: 'var(--font-mono)',
+          fontSize: '0.7rem',
+          fontWeight: 700,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '4px',
+          boxShadow: 'var(--neo-shadow-button-slate)',
+        }}
         aria-label="Select Button"
       >
         <Share2 size={12} />
         <span>BACK</span>
       </button>
 
-      {/* Guide / Home */}
+      {/* Guide / Home (3D Dome Jewel) */}
       <button
         {...createPointerHandlers(GamepadButtonMask.BTN_GUIDE)}
+        className="lookaremote-btn retro-btn"
         style={{
-          ...buttonStyle,
-          backgroundColor: 'rgba(0, 229, 255, 0.12)',
-          border: '1px solid var(--color-neon-cyan)',
-          color: 'var(--color-neon-cyan)',
+          width: '34px',
+          height: '34px',
           borderRadius: '50%',
-          width: '32px',
-          height: '32px',
+          background: 'linear-gradient(180deg, #00f0ff 0%, #00b4d8 50%, #007791 100%)',
+          border: '1.5px solid #00f0ff',
+          color: '#040d1a',
           padding: 0,
+          display: 'flex',
+          alignItems: 'center',
           justifyContent: 'center',
-          boxShadow: '0 0 8px rgba(0, 229, 255, 0.3)',
+          boxShadow: 'var(--neo-shadow-button-cyan)',
         }}
         aria-label="Guide Home Button"
       >
-        <Disc size={16} />
+        <Disc size={18} />
       </button>
 
       {/* Start / Menu */}
       <button
         {...createPointerHandlers(GamepadButtonMask.BTN_START)}
-        style={buttonStyle}
+        className="lookaremote-btn retro-btn"
+        style={{
+          padding: '6px 10px',
+          borderRadius: '7px',
+          background: 'linear-gradient(180deg, #222d42 0%, #161e2e 100%)',
+          border: '1px solid rgba(255, 255, 255, 0.12)',
+          color: 'var(--color-text-secondary)',
+          fontFamily: 'var(--font-mono)',
+          fontSize: '0.7rem',
+          fontWeight: 700,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '4px',
+          boxShadow: 'var(--neo-shadow-button-slate)',
+        }}
         aria-label="Start Button"
       >
         <span>START</span>
@@ -120,7 +145,21 @@ export const SystemButtons: React.FC<SystemButtonsProps> = ({ onButtonChange }) 
       {/* R3 Quick Click */}
       <button
         {...createPointerHandlers(GamepadButtonMask.BTN_R3)}
-        style={buttonStyle}
+        className="lookaremote-btn retro-btn"
+        style={{
+          padding: '6px 10px',
+          borderRadius: '7px',
+          background: 'linear-gradient(180deg, #222d42 0%, #161e2e 100%)',
+          border: '1px solid rgba(255, 255, 255, 0.12)',
+          color: 'var(--color-text-secondary)',
+          fontFamily: 'var(--font-mono)',
+          fontSize: '0.7rem',
+          fontWeight: 700,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '4px',
+          boxShadow: 'var(--neo-shadow-button-slate)',
+        }}
         aria-label="R3 Stick Click"
       >
         <span>R3</span>

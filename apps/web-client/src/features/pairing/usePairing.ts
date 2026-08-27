@@ -1,12 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  parsePairingUri,
-  performPairingHandshake,
   PairingParams,
   PairResponsePayload,
   ClientKeyPair,
-  generateClientKeyPair,
 } from './pairingCrypto';
+import { PairingManager, PairingState } from './PairingManager';
 
 export type PairingStage = 'idle' | 'parsing' | 'handshaking' | 'success' | 'error';
 
@@ -17,60 +15,83 @@ export interface PairingSession {
   handshakeResponse: PairResponsePayload;
 }
 
+export interface UsePairingOptions {
+  autoCheckUrlHash?: boolean;
+  onSuccess?: (session: PairingSession) => void;
+}
+
 export interface UsePairingResult {
   stage: PairingStage;
   error: string | null;
   session: PairingSession | null;
+  manager: PairingManager;
   pairWithRawUri: (rawUri: string) => Promise<PairingSession>;
   pairWithParams: (params: PairingParams) => Promise<PairingSession>;
   reset: () => void;
 }
 
-export function usePairing(autoCheckUrlHash = true): UsePairingResult {
+export function usePairing(options: UsePairingOptions | boolean = true): UsePairingResult {
+  const opts: UsePairingOptions =
+    typeof options === 'boolean' ? { autoCheckUrlHash: options } : options;
+  const autoCheckUrlHash = opts.autoCheckUrlHash !== false;
+  const onSuccessRef = useRef(opts.onSuccess);
+  onSuccessRef.current = opts.onSuccess;
+
+  const managerRef = useRef<PairingManager>(new PairingManager());
+  const manager = managerRef.current;
+
   const [stage, setStage] = useState<PairingStage>('idle');
   const [error, setError] = useState<string | null>(null);
   const [session, setSession] = useState<PairingSession | null>(null);
 
+  useEffect(() => {
+    return manager.onStateChange((state: PairingState, err?: string | null) => {
+      let currentStage: PairingStage = 'idle';
+      if (state === 'parsing') currentStage = 'parsing';
+      else if (state === 'handshaking') currentStage = 'handshaking';
+      else if (state === 'paired' || state === 'connected') currentStage = 'success';
+      else if (state === 'failed') currentStage = 'error';
+
+      setStage(currentStage);
+      setError(err ?? null);
+
+      if (manager.session) {
+        setSession(manager.session);
+      }
+    });
+  }, [manager]);
+
   const reset = useCallback(() => {
+    manager.reset();
     setStage('idle');
     setError(null);
     setSession(null);
-  }, []);
+  }, [manager]);
 
-  const pairWithParams = useCallback(async (params: PairingParams): Promise<PairingSession> => {
-    setStage('handshaking');
-    setError(null);
-
-    try {
-      const clientKeyPair = generateClientKeyPair();
-      const handshake = await performPairingHandshake(params, clientKeyPair);
-
-      const pairingSession: PairingSession = {
-        params,
-        clientKeyPair: handshake.clientKeyPair,
-        sharedSecret: handshake.sharedSecret,
-        handshakeResponse: handshake.response,
-      };
-
-      setSession(pairingSession);
-      setStage('success');
-      return pairingSession;
-    } catch (err: any) {
-      const msg = err.message || 'Pairing handshake failed.';
-      setError(msg);
-      setStage('error');
-      throw err;
-    }
-  }, []);
+  const pairWithParams = useCallback(
+    async (params: PairingParams): Promise<PairingSession> => {
+      try {
+        const stored = await manager.pairWithParams(params);
+        setSession(stored);
+        setStage('success');
+        return stored;
+      } catch (err: any) {
+        const msg = err.message || 'Pairing handshake failed.';
+        setError(msg);
+        setStage('error');
+        throw err;
+      }
+    },
+    [manager]
+  );
 
   const pairWithRawUri = useCallback(
     async (rawUri: string): Promise<PairingSession> => {
-      setStage('parsing');
-      setError(null);
-
       try {
-        const params = parsePairingUri(rawUri);
-        return await pairWithParams(params);
+        const stored = await manager.pairFromRawUri(rawUri);
+        setSession(stored);
+        setStage('success');
+        return stored;
       } catch (err: any) {
         const msg = err.message || 'Invalid pairing URI format.';
         setError(msg);
@@ -78,7 +99,7 @@ export function usePairing(autoCheckUrlHash = true): UsePairingResult {
         throw err;
       }
     },
-    [pairWithParams]
+    [manager]
   );
 
   // Auto-check URL hash (e.g., https://remote.lookaberry.com/connect#h=...&k=...)
@@ -87,9 +108,15 @@ export function usePairing(autoCheckUrlHash = true): UsePairingResult {
 
     const hash = window.location.hash;
     if (hash && (hash.includes('h=') || hash.includes('k='))) {
-      pairWithRawUri(hash).catch((e) => {
-        console.warn('Auto-pairing from URL hash failed:', e);
-      });
+      pairWithRawUri(hash)
+        .then((sess) => {
+          if (onSuccessRef.current) {
+            onSuccessRef.current(sess);
+          }
+        })
+        .catch((e) => {
+          console.warn('Auto-pairing from URL hash failed:', e);
+        });
     }
   }, [autoCheckUrlHash, pairWithRawUri]);
 
@@ -97,6 +124,7 @@ export function usePairing(autoCheckUrlHash = true): UsePairingResult {
     stage,
     error,
     session,
+    manager,
     pairWithRawUri,
     pairWithParams,
     reset,

@@ -54,19 +54,22 @@ impl TrayCompanion {
 
             // 2. Action: Connect New Device (Display QR Code in browser)
             let state_for_qr = state.clone();
-            let _ = tray.add_menu_item("📱 Conectar Novo Dispositivo (Exibir QR Code)", move || {
-                let port = state_for_qr.config.port;
-                let host_ip = state_for_qr
-                    .config
-                    .bind_addr
-                    .map(|ip| ip.to_string())
-                    .unwrap_or_else(|| "127.0.0.1".to_string());
-                let qr_url = format!("http://{}:{}/qr", host_ip, port);
-                info!("Opening QR Code Pairing Page: {qr_url}");
-                if let Err(e) = open::that(&qr_url) {
-                    error!("Failed to open QR Code in browser: {e}");
-                }
-            });
+            let _ = tray.add_menu_item(
+                "📱 Conectar Novo Dispositivo (Exibir QR Code)",
+                move || {
+                    let port = state_for_qr.config.port;
+                    let host_ip = state_for_qr
+                        .config
+                        .bind_addr
+                        .map(|ip| ip.to_string())
+                        .unwrap_or_else(|| "127.0.0.1".to_string());
+                    let qr_url = format!("http://{}:{}/qr", host_ip, port);
+                    info!("Opening QR Code Pairing Page: {qr_url}");
+                    if let Err(e) = open::that(&qr_url) {
+                        error!("Failed to open QR Code in browser: {e}");
+                    }
+                },
+            );
 
             // 3. Status Info: View Connected Devices (X/4)
             let state_for_status = state.clone();
@@ -96,7 +99,8 @@ impl TrayCompanion {
                 if let Some(ref watcher) = state_for_gamepad.context_watcher {
                     let w = Arc::clone(watcher);
                     tokio::spawn(async move {
-                        w.set_manual_override(Some(TargetControlMode::Gamepad)).await;
+                        w.set_manual_override(Some(TargetControlMode::Gamepad))
+                            .await;
                         info!("Tray manually set active mode to: Gamepad");
                     });
                 }
@@ -107,7 +111,8 @@ impl TrayCompanion {
                 if let Some(ref watcher) = state_for_trackpad.context_watcher {
                     let w = Arc::clone(watcher);
                     tokio::spawn(async move {
-                        w.set_manual_override(Some(TargetControlMode::Trackpad)).await;
+                        w.set_manual_override(Some(TargetControlMode::Trackpad))
+                            .await;
                         info!("Tray manually set active mode to: Trackpad");
                     });
                 }

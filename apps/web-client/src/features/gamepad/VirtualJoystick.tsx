@@ -9,9 +9,6 @@ export interface JoystickVectorResult {
   magnitude: number;
 }
 
-/**
- * Calculates clamped i16 stick coordinates and visual puck positions with radial deadzone and smooth rescaling.
- */
 export function calculateJoystickVector(
   dx: number,
   dy: number,
@@ -32,12 +29,10 @@ export function calculateJoystickVector(
   const normalizedRadius = Math.min(1.0, distance / maxRadius);
   const angle = Math.atan2(dy, dx);
 
-  // Visual position follows finger up to maximum physical boundary
   const visualDist = Math.min(distance, maxRadius);
   const visualX = Math.cos(angle) * visualDist;
   const visualY = Math.sin(angle) * visualDist;
 
-  // Radial deadzone filtering
   if (normalizedRadius <= deadzone) {
     return {
       stickX: 0,
@@ -48,7 +43,6 @@ export function calculateJoystickVector(
     };
   }
 
-  // Smooth linear rescaling outside deadzone
   const clampedDeadzone = Math.max(0.01, Math.min(0.95, deadzone));
   const rescaledMag = Math.min(
     1.0,
@@ -62,7 +56,6 @@ export function calculateJoystickVector(
     rawY = -rawY;
   }
 
-  // Map to signed 16-bit integer range [-32768, 32767]
   const stickX = Math.max(-32768, Math.min(32767, Math.round(rawX * 32767)));
   const stickY = Math.max(-32768, Math.min(32767, Math.round(rawY * 32767)));
 
@@ -106,7 +99,6 @@ export const VirtualJoystick: React.FC<VirtualJoystickProps> = ({
   const [puckPos, setPuckPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isActive, setIsActive] = useState(false);
 
-  // Keep latest onChange in ref to avoid re-binding pointer handlers
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
 
@@ -132,7 +124,6 @@ export const VirtualJoystick: React.FC<VirtualJoystickProps> = ({
         anchorRef.current = { x: centerX, y: centerY };
       }
 
-      // Check double-tap for L3/R3 stick click
       const now = performance.now();
       if (now - lastClickTimeRef.current < 280) {
         haptics.heavyClick();
@@ -185,7 +176,6 @@ export const VirtualJoystick: React.FC<VirtualJoystickProps> = ({
     []
   );
 
-  // Safety cleanup on unmount
   useEffect(() => {
     return () => {
       onChangeRef.current(0, 0);
@@ -193,7 +183,7 @@ export const VirtualJoystick: React.FC<VirtualJoystickProps> = ({
   }, []);
 
   const size = radius * 2 + 24;
-  const puckRadius = Math.round(radius * 0.42);
+  const puckRadius = Math.round(radius * 0.44);
 
   return (
     <div
@@ -202,15 +192,11 @@ export const VirtualJoystick: React.FC<VirtualJoystickProps> = ({
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerUp}
+      className="neo-sunken-deep"
       style={{
         width: `${size}px`,
         height: `${size}px`,
         borderRadius: '50%',
-        backgroundColor: 'rgba(5, 8, 12, 0.75)',
-        border: `2px solid ${isActive ? color : 'rgba(255, 255, 255, 0.12)'}`,
-        boxShadow: isActive
-          ? `0 0 16px ${color}40, inset 0 0 12px ${color}20`
-          : 'inset 0 0 8px rgba(0, 0, 0, 0.8)',
         position: 'relative',
         display: 'flex',
         alignItems: 'center',
@@ -218,17 +204,20 @@ export const VirtualJoystick: React.FC<VirtualJoystickProps> = ({
         touchAction: 'none',
         userSelect: 'none',
         cursor: 'grab',
-        transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
+        boxShadow: isActive
+          ? `var(--neo-shadow-sunken-deep), 0 0 16px ${color}30`
+          : 'var(--neo-shadow-sunken-deep)',
+        border: `2px solid ${isActive ? color : 'rgba(255, 255, 255, 0.1)'}`,
       }}
     >
-      {/* Outer Limit Ring */}
+      {/* Outer Limit Guide Ring */}
       <div
         style={{
           position: 'absolute',
           width: `${radius * 2}px`,
           height: `${radius * 2}px`,
           borderRadius: '50%',
-          border: '1px dashed rgba(255, 255, 255, 0.15)',
+          border: '1.5px dashed rgba(255, 255, 255, 0.14)',
           pointerEvents: 'none',
         }}
       />
@@ -245,37 +234,19 @@ export const VirtualJoystick: React.FC<VirtualJoystickProps> = ({
         }}
       />
 
-      {/* Crosshair Center Lines */}
-      <div
-        style={{
-          position: 'absolute',
-          width: '12px',
-          height: '2px',
-          backgroundColor: 'rgba(255, 255, 255, 0.1)',
-          pointerEvents: 'none',
-        }}
-      />
-      <div
-        style={{
-          position: 'absolute',
-          width: '2px',
-          height: '12px',
-          backgroundColor: 'rgba(255, 255, 255, 0.1)',
-          pointerEvents: 'none',
-        }}
-      />
-
-      {/* Thumb Puck */}
+      {/* 3D Tactile Rubber Thumb Puck */}
       <div
         style={{
           width: `${puckRadius * 2}px`,
           height: `${puckRadius * 2}px`,
           borderRadius: '50%',
-          backgroundColor: isActive ? 'rgba(20, 25, 35, 0.95)' : 'rgba(15, 18, 24, 0.9)',
+          background: isActive
+            ? 'radial-gradient(circle at 35% 35%, #2a3852 0%, #161e2e 60%, #0c1018 100%)'
+            : 'radial-gradient(circle at 35% 35%, #222d42 0%, #121824 60%, #070a0f 100%)',
           border: `2px solid ${isActive ? color : 'rgba(255, 255, 255, 0.3)'}`,
           boxShadow: isActive
-            ? `0 0 12px ${color}, inset 0 0 8px ${color}60`
-            : '0 2px 6px rgba(0, 0, 0, 0.6)',
+            ? `0 6px 14px rgba(0, 0, 0, 0.9), 0 0 14px ${color}60, inset 0 2px 4px rgba(255, 255, 255, 0.3)`
+            : '0 5px 12px rgba(0, 0, 0, 0.85), inset 0 2px 3px rgba(255, 255, 255, 0.2)',
           transform: `translate3d(${puckPos.x}px, ${puckPos.y}px, 0)`,
           display: 'flex',
           alignItems: 'center',
@@ -285,18 +256,32 @@ export const VirtualJoystick: React.FC<VirtualJoystickProps> = ({
           transition: isActive ? 'none' : 'transform 0.18s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
         }}
       >
-        <span
+        {/* Concentric Grip Ring */}
+        <div
           style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: '0.75rem',
-            fontWeight: 800,
-            color: isActive ? color : 'var(--color-text-muted)',
-            letterSpacing: '0.05em',
-            textShadow: isActive ? `0 0 6px ${color}` : 'none',
+            width: `${puckRadius * 1.3}px`,
+            height: `${puckRadius * 1.3}px`,
+            borderRadius: '50%',
+            border: '1px solid rgba(255, 255, 255, 0.15)',
+            boxShadow: 'inset 0 1px 3px rgba(0, 0, 0, 0.8)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
-          {label}
-        </span>
+          <span
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: '0.8rem',
+              fontWeight: 900,
+              color: isActive ? color : 'var(--color-text-secondary)',
+              letterSpacing: '0.06em',
+              textShadow: isActive ? `0 0 8px ${color}` : '0 1px 2px #000',
+            }}
+          >
+            {label}
+          </span>
+        </div>
       </div>
     </div>
   );

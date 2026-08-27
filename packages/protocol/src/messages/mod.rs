@@ -32,9 +32,7 @@ pub use tv_command::{
     commands as tv_commands, target_devices as tv_target_devices, TvCommandMessage,
     TV_COMMAND_PAYLOAD_SIZE, TV_COMMAND_TOTAL_SIZE,
 };
-pub use tv_text::{
-    TvTextInputMessage, TV_TEXT_MAX_LEN, TV_TEXT_PAYLOAD_SIZE, TV_TEXT_TOTAL_SIZE,
-};
+pub use tv_text::{TvTextInputMessage, TV_TEXT_MAX_LEN, TV_TEXT_PAYLOAD_SIZE, TV_TEXT_TOTAL_SIZE};
 
 /// Message type identifiers in the LookARemote Binary Protocol v1.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

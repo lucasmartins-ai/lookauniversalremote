@@ -11,13 +11,13 @@ pub const TOUCHPAD_TOTAL_SIZE: usize = HEADER_SIZE + TOUCHPAD_PAYLOAD_SIZE;
 /// Touchpad mouse button bitmask constants (`u8`).
 pub mod buttons {
     /// Left mouse button (Bit 0).
-    pub const BTN_LEFT: u8 = 1 << 0;   // 0x01
+    pub const BTN_LEFT: u8 = 1 << 0; // 0x01
     /// Right mouse button (Bit 1).
-    pub const BTN_RIGHT: u8 = 1 << 1;  // 0x02
+    pub const BTN_RIGHT: u8 = 1 << 1; // 0x02
     /// Middle mouse button (Bit 2).
     pub const BTN_MIDDLE: u8 = 1 << 2; // 0x04
     /// Tap-to-click gesture action (Bit 3).
-    pub const TAP_CLICK: u8 = 1 << 3;  // 0x08
+    pub const TAP_CLICK: u8 = 1 << 3; // 0x08
 }
 
 /// MSG_TOUCHPAD payload (0x04) — 7 bytes.

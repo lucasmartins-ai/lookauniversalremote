@@ -198,7 +198,10 @@ impl ProfileMatcher {
 
     /// Matches the given `ActiveWindowInfo` against all registered profiles in order.
     /// Returns the matched `ProfileConfig` and `TargetControlMode` if a match is found.
-    pub fn match_window(&self, window: &ActiveWindowInfo) -> Option<(&ProfileConfig, TargetControlMode)> {
+    pub fn match_window(
+        &self,
+        window: &ActiveWindowInfo,
+    ) -> Option<(&ProfileConfig, TargetControlMode)> {
         let proc_lower = window.process_name.trim().to_lowercase();
         let proc_clean = proc_lower.strip_suffix(".exe").unwrap_or(&proc_lower);
         let class_lower = window
@@ -217,7 +220,9 @@ impl ProfileMatcher {
                 for expected in &prof.process_names {
                     let exp_lower = expected.trim().to_lowercase();
                     let exp_clean = exp_lower.strip_suffix(".exe").unwrap_or(&exp_lower);
-                    if !proc_clean.is_empty() && (proc_clean == exp_clean || proc_clean.contains(exp_clean)) {
+                    if !proc_clean.is_empty()
+                        && (proc_clean == exp_clean || proc_clean.contains(exp_clean))
+                    {
                         process_matched = true;
                         break;
                     }

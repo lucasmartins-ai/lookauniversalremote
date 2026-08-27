@@ -7,6 +7,10 @@ export interface ActionButtonDef {
   label: string;
   mask: number;
   color: string;
+  bgGrad: string;
+  bgPressed: string;
+  shadowBase: string;
+  shadowPressed: string;
   gridArea: string;
 }
 
@@ -15,28 +19,44 @@ const ACTION_BUTTONS: ActionButtonDef[] = [
     id: 'y',
     label: 'Y',
     mask: GamepadButtonMask.BTN_NORTH, // 0x0080
-    color: 'var(--color-neon-amber)',
+    color: '#1a0e00',
+    bgGrad: 'linear-gradient(180deg, #ffd166 0%, #ffb703 50%, #b37400 100%)',
+    bgPressed: 'linear-gradient(180deg, #b37400 0%, #ffb703 100%)',
+    shadowBase: 'var(--neo-shadow-button-amber)',
+    shadowPressed: 'var(--neo-shadow-button-amber-pressed)',
     gridArea: 'y',
   },
   {
     id: 'x',
     label: 'X',
     mask: GamepadButtonMask.BTN_WEST, // 0x0040
-    color: 'var(--color-neon-cyan)',
+    color: '#040d1a',
+    bgGrad: 'linear-gradient(180deg, #00f0ff 0%, #00b4d8 50%, #007791 100%)',
+    bgPressed: 'linear-gradient(180deg, #007791 0%, #00b4d8 100%)',
+    shadowBase: 'var(--neo-shadow-button-cyan)',
+    shadowPressed: 'var(--neo-shadow-button-cyan-pressed)',
     gridArea: 'x',
   },
   {
     id: 'b',
     label: 'B',
     mask: GamepadButtonMask.BTN_EAST, // 0x0020
-    color: 'var(--color-neon-red)',
+    color: '#ffffff',
+    bgGrad: 'linear-gradient(180deg, #ff3366 0%, #e60039 50%, #9e0c29 100%)',
+    bgPressed: 'linear-gradient(180deg, #9e0c29 0%, #e60039 100%)',
+    shadowBase: 'var(--neo-shadow-button-red)',
+    shadowPressed: 'var(--neo-shadow-button-red-pressed)',
     gridArea: 'b',
   },
   {
     id: 'a',
     label: 'A',
     mask: GamepadButtonMask.BTN_SOUTH, // 0x0010
-    color: 'var(--color-neon-green)',
+    color: '#03140a',
+    bgGrad: 'linear-gradient(180deg, #00f59b 0%, #00cc7a 50%, #007a47 100%)',
+    bgPressed: 'linear-gradient(180deg, #007a47 0%, #00cc7a 100%)',
+    shadowBase: 'var(--neo-shadow-button-green)',
+    shadowPressed: 'var(--neo-shadow-button-green-pressed)',
     gridArea: 'a',
   },
 ];
@@ -51,21 +71,19 @@ export const ActionDiamond: React.FC<ActionDiamondProps> = ({
   size = 180,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const pointerMapRef = useRef<Map<number, number>>(new Map()); // pointerId -> active button mask
+  const pointerMapRef = useRef<Map<number, number>>(new Map());
   const [activeMasks, setActiveMasks] = useState<number>(0);
 
   const onButtonChangeRef = useRef(onButtonChange);
   onButtonChangeRef.current = onButtonChange;
 
-  // Detect which action button is under a pointer coordinate
   const getButtonAtPoint = useCallback((clientX: number, clientY: number): ActionButtonDef | null => {
     if (!containerRef.current) return null;
 
     const buttons = containerRef.current.querySelectorAll<HTMLButtonElement>('[data-action-button]');
     for (const btn of Array.from(buttons)) {
       const rect = btn.getBoundingClientRect();
-      // Expand hit test boundary slightly for smooth thumb sliding
-      const padding = 6;
+      const padding = 8;
       if (
         clientX >= rect.left - padding &&
         clientX <= rect.right + padding &&
@@ -154,7 +172,7 @@ export const ActionDiamond: React.FC<ActionDiamondProps> = ({
     };
   }, []);
 
-  const buttonSize = Math.round(size * 0.32);
+  const buttonSize = Math.round(size * 0.33);
 
   return (
     <div
@@ -163,9 +181,11 @@ export const ActionDiamond: React.FC<ActionDiamondProps> = ({
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerUp}
+      className="neo-sunken"
       style={{
         width: `${size}px`,
         height: `${size}px`,
+        borderRadius: '50%',
         display: 'grid',
         gridTemplateAreas: `
           ". y ."
@@ -179,6 +199,8 @@ export const ActionDiamond: React.FC<ActionDiamondProps> = ({
         position: 'relative',
         touchAction: 'none',
         userSelect: 'none',
+        padding: '6px',
+        boxShadow: 'var(--neo-shadow-sunken)',
       }}
     >
       {ACTION_BUTTONS.map((btn) => {
@@ -193,24 +215,26 @@ export const ActionDiamond: React.FC<ActionDiamondProps> = ({
               width: `${buttonSize}px`,
               height: `${buttonSize}px`,
               borderRadius: '50%',
-              backgroundColor: isPressed ? btn.color : 'rgba(10, 15, 22, 0.85)',
-              border: `2px solid ${btn.color}`,
-              color: isPressed ? '#000000' : btn.color,
+              background: isPressed ? btn.bgPressed : btn.bgGrad,
+              color: btn.color,
               fontFamily: 'var(--font-display)',
-              fontSize: '1.25rem',
-              fontWeight: 800,
+              fontSize: '1.35rem',
+              fontWeight: 900,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
-              boxShadow: isPressed
-                ? `0 0 18px ${btn.color}, inset 0 0 12px rgba(255, 255, 255, 0.6)`
-                : `0 0 8px ${btn.color}30`,
-              transform: isPressed ? 'scale(0.92)' : 'scale(1)',
-              transition: 'transform 0.08s ease, background-color 0.08s ease, box-shadow 0.08s ease',
+              boxShadow: isPressed ? btn.shadowPressed : btn.shadowBase,
+              borderTop: isPressed ? 'none' : '1.5px solid rgba(255, 255, 255, 0.7)',
+              borderLeft: isPressed ? 'none' : '1px solid rgba(255, 255, 255, 0.5)',
+              borderBottom: isPressed ? '1px solid rgba(0, 0, 0, 0.6)' : '2px solid rgba(0, 0, 0, 0.8)',
+              borderRight: isPressed ? '1px solid rgba(0, 0, 0, 0.6)' : '1px solid rgba(0, 0, 0, 0.8)',
+              transform: isPressed ? 'translateY(3px) scale(0.96)' : 'translateY(0) scale(1)',
+              transition: 'transform 0.08s ease, box-shadow 0.08s ease, background 0.08s ease',
               touchAction: 'none',
               userSelect: 'none',
-              pointerEvents: 'none', // Touch managed by parent container for sliding
+              pointerEvents: 'none',
+              textShadow: isPressed ? 'none' : '0 1px 1px rgba(255, 255, 255, 0.4)',
             }}
           >
             {btn.label}

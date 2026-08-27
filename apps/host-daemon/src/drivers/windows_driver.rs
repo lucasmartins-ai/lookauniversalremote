@@ -100,14 +100,14 @@ impl WindowsMouseDriver {
             },
         };
 
-        let sent = unsafe {
-            ffi::SendInput(1, &input, std::mem::size_of::<ffi::INPUT>() as i32)
-        };
+        let sent = unsafe { ffi::SendInput(1, &input, std::mem::size_of::<ffi::INPUT>() as i32) };
 
         if sent == 1 {
             Ok(())
         } else {
-            Err(DriverError::Communication("SendInput failed to post mouse event".into()))
+            Err(DriverError::Communication(
+                "SendInput failed to post mouse event".into(),
+            ))
         }
     }
 }
@@ -301,14 +301,14 @@ impl WindowsKeyboardDriver {
             },
         };
 
-        let sent = unsafe {
-            ffi::SendInput(1, &input, std::mem::size_of::<ffi::INPUT>() as i32)
-        };
+        let sent = unsafe { ffi::SendInput(1, &input, std::mem::size_of::<ffi::INPUT>() as i32) };
 
         if sent == 1 {
             Ok(())
         } else {
-            Err(DriverError::Communication("SendInput failed to post keyboard event".into()))
+            Err(DriverError::Communication(
+                "SendInput failed to post keyboard event".into(),
+            ))
         }
     }
 }

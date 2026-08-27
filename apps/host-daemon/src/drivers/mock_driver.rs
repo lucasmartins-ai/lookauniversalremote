@@ -27,7 +27,11 @@ impl MockGamepadDriver {
 
     /// Creates a new MockGamepadDriver for a specific player slot.
     pub fn for_slot(slot_index: u8) -> Self {
-        info!(slot = slot_index, "Initialized MockGamepadDriver for Player Slot {}", slot_index + 1);
+        info!(
+            slot = slot_index,
+            "Initialized MockGamepadDriver for Player Slot {}",
+            slot_index + 1
+        );
         Self {
             slot_index,
             last_message: None,
@@ -83,7 +87,10 @@ impl VirtualGamepadDriver for MockGamepadDriver {
         self.last_message = Some(neutral_msg);
         self.neutralize_count += 1;
         self.is_neutral = true;
-        debug!(slot = self.slot_index, "MockGamepadDriver neutralized (all inputs released)");
+        debug!(
+            slot = self.slot_index,
+            "MockGamepadDriver neutralized (all inputs released)"
+        );
         Ok(())
     }
 }

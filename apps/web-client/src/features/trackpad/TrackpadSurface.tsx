@@ -19,7 +19,6 @@ export const TrackpadSurface: React.FC<TrackpadSurfaceProps> = ({ config, onOutp
   const recognizerRef = useRef<GestureRecognizer | null>(null);
   const [activeVisuals, setActiveVisuals] = useState<ActivePointerVisual[]>([]);
 
-  // Initialize and update recognizer
   useEffect(() => {
     if (!recognizerRef.current) {
       recognizerRef.current = new GestureRecognizer(config, (output) => {
@@ -101,14 +100,13 @@ export const TrackpadSurface: React.FC<TrackpadSurfaceProps> = ({ config, onOutp
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
       onTouchCancel={handleTouchCancel}
+      className="neo-sunken-deep"
       style={{
         flex: 1,
         width: '100%',
         height: '100%',
         minHeight: '260px',
-        borderRadius: '16px',
-        backgroundColor: '#05080c',
-        border: '1px solid var(--color-border-accent)',
+        borderRadius: '18px',
         position: 'relative',
         overflow: 'hidden',
         touchAction: 'none',
@@ -117,7 +115,7 @@ export const TrackpadSurface: React.FC<TrackpadSurfaceProps> = ({ config, onOutp
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        boxShadow: 'inset 0 0 25px rgba(0, 229, 255, 0.08), 0 8px 32px rgba(0, 0, 0, 0.8)',
+        border: '2px solid rgba(255, 255, 255, 0.08)',
       }}
     >
       {/* Background Cyber Grid */}
@@ -139,27 +137,30 @@ export const TrackpadSurface: React.FC<TrackpadSurfaceProps> = ({ config, onOutp
           flexDirection: 'column',
           alignItems: 'center',
           gap: '8px',
-          opacity: activeVisuals.length > 0 ? 0.15 : 0.4,
+          opacity: activeVisuals.length > 0 ? 0.15 : 0.45,
           transition: 'opacity var(--transition-normal)',
           pointerEvents: 'none',
         }}
       >
-        <MousePointer size={36} color="var(--color-neon-cyan)" />
+        <MousePointer size={38} color="var(--color-neon-cyan)" />
         <span
+          className="retro-embossed-text"
           style={{
-            fontFamily: 'var(--font-mono)',
-            fontSize: '0.75rem',
-            letterSpacing: '0.1em',
-            color: 'var(--color-text-muted)',
+            fontFamily: 'var(--font-display)',
+            fontSize: '0.9rem',
+            letterSpacing: '0.12em',
+            fontWeight: 800,
+            color: 'var(--color-text-primary)',
           }}
         >
-          MULTI-TOUCH TRACKPAD
+          MULTI-TOUCH TRACKPAD DECK
         </span>
         <span
           style={{
             fontFamily: 'var(--font-mono)',
-            fontSize: '0.65rem',
-            color: 'var(--color-text-dim)',
+            fontSize: '0.68rem',
+            color: 'var(--color-text-muted)',
+            fontWeight: 600,
           }}
         >
           1-FINGER: CURSOR & TAP • 2-FINGER: SCROLL & RIGHT TAP
@@ -178,16 +179,15 @@ export const TrackpadSurface: React.FC<TrackpadSurfaceProps> = ({ config, onOutp
             pointerEvents: 'none',
           }}
         >
-          {/* Inner Glowing Ring */}
           <div
             style={{
-              width: '44px',
-              height: '44px',
+              width: '48px',
+              height: '48px',
               borderRadius: '50%',
               backgroundColor: 'rgba(0, 229, 255, 0.25)',
               border: '2px solid var(--color-neon-cyan)',
-              boxShadow: '0 0 16px var(--color-neon-cyan)',
-              animation: 'pulse 1s infinite alternate',
+              boxShadow: '0 0 18px var(--color-neon-cyan)',
+              animation: 'pulse-glow 1s infinite alternate',
             }}
           />
         </div>

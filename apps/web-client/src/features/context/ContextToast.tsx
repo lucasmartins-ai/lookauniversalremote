@@ -14,11 +14,11 @@ function getModeIcon(mode: InputMode) {
     case 'gamepad':
       return <Gamepad2 size={20} color="var(--color-neon-cyan)" />;
     case 'trackpad':
-      return <MousePointer size={20} color="var(--color-neon-green, #00e676)" />;
+      return <MousePointer size={20} color="var(--color-neon-green)" />;
     case 'keyboard':
-      return <Keyboard size={20} color="var(--color-neon-yellow, #ffd600)" />;
+      return <Keyboard size={20} color="var(--color-neon-amber)" />;
     case 'media':
-      return <Music size={20} color="var(--color-neon-magenta, #f50057)" />;
+      return <Music size={20} color="var(--color-neon-pink)" />;
     default:
       return <Gamepad2 size={20} color="var(--color-neon-cyan)" />;
   }
@@ -27,15 +27,15 @@ function getModeIcon(mode: InputMode) {
 function getModeGlow(mode: InputMode): string {
   switch (mode) {
     case 'gamepad':
-      return 'rgba(0, 229, 255, 0.35)';
+      return 'rgba(0, 229, 255, 0.4)';
     case 'trackpad':
-      return 'rgba(0, 230, 118, 0.35)';
+      return 'rgba(0, 245, 155, 0.4)';
     case 'keyboard':
-      return 'rgba(255, 214, 0, 0.35)';
+      return 'rgba(255, 183, 3, 0.4)';
     case 'media':
-      return 'rgba(245, 0, 87, 0.35)';
+      return 'rgba(255, 0, 127, 0.4)';
     default:
-      return 'rgba(0, 229, 255, 0.35)';
+      return 'rgba(0, 229, 255, 0.4)';
   }
 }
 
@@ -53,6 +53,7 @@ export const ContextToast: React.FC<ContextToastProps> = ({
     <div
       role="status"
       aria-live="polite"
+      className="neo-raised-lg"
       style={{
         position: 'absolute',
         top: '64px',
@@ -60,13 +61,11 @@ export const ContextToast: React.FC<ContextToastProps> = ({
         transform: 'translateX(-50%)',
         zIndex: 50,
         width: 'calc(100% - 32px)',
-        maxWidth: '420px',
-        backgroundColor: 'rgba(10, 15, 22, 0.95)',
-        backdropFilter: 'blur(12px)',
-        border: `1px solid ${glowColor}`,
-        borderRadius: '12px',
-        boxShadow: `0 8px 24px rgba(0, 0, 0, 0.6), 0 0 16px ${glowColor}`,
-        padding: '12px 16px',
+        maxWidth: '440px',
+        borderRadius: '16px',
+        border: `1.5px solid ${glowColor}`,
+        boxShadow: `0 8px 30px rgba(0, 0, 0, 0.8), 0 0 20px ${glowColor}`,
+        padding: '12px 18px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -77,16 +76,16 @@ export const ContextToast: React.FC<ContextToastProps> = ({
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
         <div
+          className="neo-sunken"
           style={{
-            width: '36px',
-            height: '36px',
-            borderRadius: '8px',
-            backgroundColor: 'rgba(255, 255, 255, 0.05)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
+            width: '40px',
+            height: '40px',
+            borderRadius: '10px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
+            border: '1px solid rgba(255, 255, 255, 0.1)',
           }}
         >
           {getModeIcon(toast.mode)}
@@ -94,10 +93,11 @@ export const ContextToast: React.FC<ContextToastProps> = ({
 
         <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
           <div
+            className="retro-embossed-text"
             style={{
               fontFamily: 'var(--font-display)',
-              fontSize: '0.8rem',
-              fontWeight: 700,
+              fontSize: '0.88rem',
+              fontWeight: 800,
               letterSpacing: '0.06em',
               color: '#ffffff',
               whiteSpace: 'nowrap',
@@ -109,12 +109,13 @@ export const ContextToast: React.FC<ContextToastProps> = ({
           </div>
           <div
             style={{
-              fontFamily: 'var(--font-sans)',
-              fontSize: '0.7rem',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '0.72rem',
               color: 'var(--color-text-secondary)',
               whiteSpace: 'nowrap',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
+              fontWeight: 600,
             }}
           >
             {toast.subtitle}
@@ -127,38 +128,44 @@ export const ContextToast: React.FC<ContextToastProps> = ({
           type="button"
           onClick={onToggleLock}
           title={isManualLocked ? 'Manual Lock Active (Auto-Switch Paused)' : 'Auto-Switch Active (Click to Lock)'}
+          className="lookaremote-btn retro-btn"
           style={{
-            padding: '6px',
-            borderRadius: '6px',
-            backgroundColor: isManualLocked ? 'rgba(255, 214, 0, 0.15)' : 'rgba(255, 255, 255, 0.05)',
-            border: isManualLocked ? '1px solid var(--color-neon-yellow, #ffd600)' : '1px solid rgba(255, 255, 255, 0.1)',
-            color: isManualLocked ? 'var(--color-neon-yellow, #ffd600)' : 'var(--color-text-muted)',
+            padding: '8px',
+            borderRadius: '8px',
+            background: isManualLocked
+              ? 'linear-gradient(180deg, #ffc01e 0%, #b36b00 100%)'
+              : 'linear-gradient(180deg, #222d42 0%, #161e2e 100%)',
+            border: isManualLocked ? '1px solid #ffc01e' : '1px solid rgba(255, 255, 255, 0.12)',
+            color: isManualLocked ? '#1a0e00' : 'var(--color-text-muted)',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            boxShadow: isManualLocked ? 'var(--neo-shadow-button-amber)' : 'var(--neo-shadow-button-slate)',
           }}
         >
-          {isManualLocked ? <Lock size={14} /> : <Unlock size={14} />}
+          {isManualLocked ? <Lock size={15} /> : <Unlock size={15} />}
         </button>
 
         <button
           type="button"
           onClick={onDismiss}
           title="Dismiss Toast"
+          className="lookaremote-btn retro-btn"
           style={{
-            padding: '6px',
-            borderRadius: '6px',
-            backgroundColor: 'rgba(255, 255, 255, 0.05)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
+            padding: '8px',
+            borderRadius: '8px',
+            background: 'linear-gradient(180deg, #222d42 0%, #161e2e 100%)',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
             color: 'var(--color-text-muted)',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            boxShadow: 'var(--neo-shadow-button-slate)',
           }}
         >
-          <X size={14} />
+          <X size={15} />
         </button>
       </div>
     </div>

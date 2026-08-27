@@ -28,11 +28,15 @@ impl ViGEmGamepadDriver {
 
         let mut target = Xbox360::new(client, TargetId::XBOX360_WIRED);
         target.plugin().map_err(|e| {
-            DriverError::Internal(format!("Failed to plug in virtual Xbox 360 controller: {e:?}"))
+            DriverError::Internal(format!(
+                "Failed to plug in virtual Xbox 360 controller: {e:?}"
+            ))
         })?;
 
         target.wait_ready().map_err(|e| {
-            DriverError::Internal(format!("ViGEm virtual target failed to become ready: {e:?}"))
+            DriverError::Internal(format!(
+                "ViGEm virtual target failed to become ready: {e:?}"
+            ))
         })?;
 
         info!("Successfully initialized Windows ViGEm Xbox 360 virtual controller");
@@ -101,18 +105,18 @@ impl VirtualGamepadDriver for ViGEmGamepadDriver {
             thumb_ry: msg.stick_ry,
         };
 
-        self.target
-            .update(&gamepad)
-            .map_err(|e| DriverError::Communication(format!("Failed to update ViGEm controller: {e:?}")))?;
+        self.target.update(&gamepad).map_err(|e| {
+            DriverError::Communication(format!("Failed to update ViGEm controller: {e:?}"))
+        })?;
 
         Ok(())
     }
 
     fn neutralize(&mut self) -> Result<(), DriverError> {
         let gamepad = XGamepad::default();
-        self.target
-            .update(&gamepad)
-            .map_err(|e| DriverError::Communication(format!("Failed to neutralize ViGEm controller: {e:?}")))?;
+        self.target.update(&gamepad).map_err(|e| {
+            DriverError::Communication(format!("Failed to neutralize ViGEm controller: {e:?}"))
+        })?;
         Ok(())
     }
 }

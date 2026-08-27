@@ -464,12 +464,10 @@ impl VirtualKeyboardDriver for MacOSKeyboardDriver {
 
             if let Some(code) = vk {
                 // Post down then up
-                let ev_down = unsafe {
-                    ffi::CGEventCreateKeyboardEvent(std::ptr::null_mut(), code, true)
-                };
-                let ev_up = unsafe {
-                    ffi::CGEventCreateKeyboardEvent(std::ptr::null_mut(), code, false)
-                };
+                let ev_down =
+                    unsafe { ffi::CGEventCreateKeyboardEvent(std::ptr::null_mut(), code, true) };
+                let ev_up =
+                    unsafe { ffi::CGEventCreateKeyboardEvent(std::ptr::null_mut(), code, false) };
                 if !ev_down.is_null() {
                     unsafe {
                         ffi::CGEventPost(ffi::kCGHIDEventTap, ev_down);
@@ -501,9 +499,8 @@ impl VirtualKeyboardDriver for MacOSKeyboardDriver {
         {
             for key_code in self.pressed_keys.drain() {
                 if let Some(vk) = Self::hid_to_macos_vk(key_code) {
-                    let ev = unsafe {
-                        ffi::CGEventCreateKeyboardEvent(std::ptr::null_mut(), vk, false)
-                    };
+                    let ev =
+                        unsafe { ffi::CGEventCreateKeyboardEvent(std::ptr::null_mut(), vk, false) };
                     if !ev.is_null() {
                         unsafe {
                             ffi::CGEventPost(ffi::kCGHIDEventTap, ev);

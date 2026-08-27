@@ -8,8 +8,8 @@ use lookaremote_protocol::messages::{buttons, GamepadFullMessage};
 use evdev::uinput::{VirtualDevice, VirtualDeviceBuilder};
 #[cfg(target_os = "linux")]
 use evdev::{
-    AbsInfo, AbsoluteAxisType, AttributeSet, BusType, EventType,
-    InputEvent as EvdevInputEvent, InputId, Key, SynchronizationCode, UinputAbsSetup,
+    AbsInfo, AbsoluteAxisType, AttributeSet, BusType, EventType, InputEvent as EvdevInputEvent,
+    InputId, Key, SynchronizationCode, UinputAbsSetup,
 };
 #[cfg(target_os = "linux")]
 use tracing::{debug, info, warn};
@@ -74,16 +74,18 @@ impl UInputGamepadDriver {
             .with_absolute_axis(&abs_rz)
             .map_err(|e| DriverError::Internal(format!("Failed to register ABS_RZ: {e}")))?
             .build()
-            .map_err(|e| DriverError::PermissionDenied(format!("Failed to build uinput virtual device (check /dev/uinput permissions): {e}")))?;
+            .map_err(|e| {
+                DriverError::PermissionDenied(format!(
+                    "Failed to build uinput virtual device (check /dev/uinput permissions): {e}"
+                ))
+            })?;
 
         info!("Successfully created Linux /dev/uinput virtual Xbox 360 controller");
         Ok(Self { device })
     }
 
     fn emit_events(&mut self, events: &[EvdevInputEvent]) -> Result<(), DriverError> {
-        self.device
-            .emit(events)
-            .map_err(|e| DriverError::Io(e))?;
+        self.device.emit(events).map_err(|e| DriverError::Io(e))?;
         Ok(())
     }
 }
@@ -101,30 +103,110 @@ impl VirtualGamepadDriver for UInputGamepadDriver {
 
         let events = [
             // Buttons
-            EvdevInputEvent::new(EventType::KEY, Key::BTN_A.code(), key_val(buttons::BTN_SOUTH)),
-            EvdevInputEvent::new(EventType::KEY, Key::BTN_B.code(), key_val(buttons::BTN_EAST)),
-            EvdevInputEvent::new(EventType::KEY, Key::BTN_X.code(), key_val(buttons::BTN_WEST)),
-            EvdevInputEvent::new(EventType::KEY, Key::BTN_Y.code(), key_val(buttons::BTN_NORTH)),
+            EvdevInputEvent::new(
+                EventType::KEY,
+                Key::BTN_A.code(),
+                key_val(buttons::BTN_SOUTH),
+            ),
+            EvdevInputEvent::new(
+                EventType::KEY,
+                Key::BTN_B.code(),
+                key_val(buttons::BTN_EAST),
+            ),
+            EvdevInputEvent::new(
+                EventType::KEY,
+                Key::BTN_X.code(),
+                key_val(buttons::BTN_WEST),
+            ),
+            EvdevInputEvent::new(
+                EventType::KEY,
+                Key::BTN_Y.code(),
+                key_val(buttons::BTN_NORTH),
+            ),
             EvdevInputEvent::new(EventType::KEY, Key::BTN_TL.code(), key_val(buttons::BTN_L1)),
             EvdevInputEvent::new(EventType::KEY, Key::BTN_TR.code(), key_val(buttons::BTN_R1)),
-            EvdevInputEvent::new(EventType::KEY, Key::BTN_THUMBL.code(), key_val(buttons::BTN_L3)),
-            EvdevInputEvent::new(EventType::KEY, Key::BTN_THUMBR.code(), key_val(buttons::BTN_R3)),
-            EvdevInputEvent::new(EventType::KEY, Key::BTN_START.code(), key_val(buttons::BTN_START)),
-            EvdevInputEvent::new(EventType::KEY, Key::BTN_SELECT.code(), key_val(buttons::BTN_SELECT)),
-            EvdevInputEvent::new(EventType::KEY, Key::BTN_MODE.code(), key_val(buttons::BTN_GUIDE)),
-            EvdevInputEvent::new(EventType::KEY, Key::BTN_DPAD_UP.code(), key_val(buttons::DPAD_UP)),
-            EvdevInputEvent::new(EventType::KEY, Key::BTN_DPAD_DOWN.code(), key_val(buttons::DPAD_DOWN)),
-            EvdevInputEvent::new(EventType::KEY, Key::BTN_DPAD_LEFT.code(), key_val(buttons::DPAD_LEFT)),
-            EvdevInputEvent::new(EventType::KEY, Key::BTN_DPAD_RIGHT.code(), key_val(buttons::DPAD_RIGHT)),
+            EvdevInputEvent::new(
+                EventType::KEY,
+                Key::BTN_THUMBL.code(),
+                key_val(buttons::BTN_L3),
+            ),
+            EvdevInputEvent::new(
+                EventType::KEY,
+                Key::BTN_THUMBR.code(),
+                key_val(buttons::BTN_R3),
+            ),
+            EvdevInputEvent::new(
+                EventType::KEY,
+                Key::BTN_START.code(),
+                key_val(buttons::BTN_START),
+            ),
+            EvdevInputEvent::new(
+                EventType::KEY,
+                Key::BTN_SELECT.code(),
+                key_val(buttons::BTN_SELECT),
+            ),
+            EvdevInputEvent::new(
+                EventType::KEY,
+                Key::BTN_MODE.code(),
+                key_val(buttons::BTN_GUIDE),
+            ),
+            EvdevInputEvent::new(
+                EventType::KEY,
+                Key::BTN_DPAD_UP.code(),
+                key_val(buttons::DPAD_UP),
+            ),
+            EvdevInputEvent::new(
+                EventType::KEY,
+                Key::BTN_DPAD_DOWN.code(),
+                key_val(buttons::DPAD_DOWN),
+            ),
+            EvdevInputEvent::new(
+                EventType::KEY,
+                Key::BTN_DPAD_LEFT.code(),
+                key_val(buttons::DPAD_LEFT),
+            ),
+            EvdevInputEvent::new(
+                EventType::KEY,
+                Key::BTN_DPAD_RIGHT.code(),
+                key_val(buttons::DPAD_RIGHT),
+            ),
             // Analog Axes
-            EvdevInputEvent::new(EventType::ABSOLUTE, AbsoluteAxisType::ABS_X.0, msg.stick_lx as i32),
-            EvdevInputEvent::new(EventType::ABSOLUTE, AbsoluteAxisType::ABS_Y.0, msg.stick_ly as i32),
-            EvdevInputEvent::new(EventType::ABSOLUTE, AbsoluteAxisType::ABS_RX.0, msg.stick_rx as i32),
-            EvdevInputEvent::new(EventType::ABSOLUTE, AbsoluteAxisType::ABS_RY.0, msg.stick_ry as i32),
-            EvdevInputEvent::new(EventType::ABSOLUTE, AbsoluteAxisType::ABS_Z.0, msg.trigger_l as i32),
-            EvdevInputEvent::new(EventType::ABSOLUTE, AbsoluteAxisType::ABS_RZ.0, msg.trigger_r as i32),
+            EvdevInputEvent::new(
+                EventType::ABSOLUTE,
+                AbsoluteAxisType::ABS_X.0,
+                msg.stick_lx as i32,
+            ),
+            EvdevInputEvent::new(
+                EventType::ABSOLUTE,
+                AbsoluteAxisType::ABS_Y.0,
+                msg.stick_ly as i32,
+            ),
+            EvdevInputEvent::new(
+                EventType::ABSOLUTE,
+                AbsoluteAxisType::ABS_RX.0,
+                msg.stick_rx as i32,
+            ),
+            EvdevInputEvent::new(
+                EventType::ABSOLUTE,
+                AbsoluteAxisType::ABS_RY.0,
+                msg.stick_ry as i32,
+            ),
+            EvdevInputEvent::new(
+                EventType::ABSOLUTE,
+                AbsoluteAxisType::ABS_Z.0,
+                msg.trigger_l as i32,
+            ),
+            EvdevInputEvent::new(
+                EventType::ABSOLUTE,
+                AbsoluteAxisType::ABS_RZ.0,
+                msg.trigger_r as i32,
+            ),
             // Synchronization Report
-            EvdevInputEvent::new(EventType::SYNCHRONIZATION, SynchronizationCode::SYN_REPORT.0, 0),
+            EvdevInputEvent::new(
+                EventType::SYNCHRONIZATION,
+                SynchronizationCode::SYN_REPORT.0,
+                0,
+            ),
         ];
 
         self.emit_events(&events)
@@ -153,7 +235,11 @@ impl VirtualGamepadDriver for UInputGamepadDriver {
             EvdevInputEvent::new(EventType::ABSOLUTE, AbsoluteAxisType::ABS_RY.0, 0),
             EvdevInputEvent::new(EventType::ABSOLUTE, AbsoluteAxisType::ABS_Z.0, 0),
             EvdevInputEvent::new(EventType::ABSOLUTE, AbsoluteAxisType::ABS_RZ.0, 0),
-            EvdevInputEvent::new(EventType::SYNCHRONIZATION, SynchronizationCode::SYN_REPORT.0, 0),
+            EvdevInputEvent::new(
+                EventType::SYNCHRONIZATION,
+                SynchronizationCode::SYN_REPORT.0,
+                0,
+            ),
         ];
 
         self.emit_events(&events)

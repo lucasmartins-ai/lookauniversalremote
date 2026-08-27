@@ -21,43 +21,43 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
   > = {
     connected: {
       color: 'var(--color-neon-green)',
-      bg: 'rgba(118, 255, 3, 0.1)',
-      border: 'rgba(118, 255, 3, 0.3)',
+      bg: 'rgba(0, 245, 155, 0.12)',
+      border: 'rgba(0, 245, 155, 0.4)',
       defaultLabel: 'ONLINE',
       pulse: false,
     },
     connecting: {
       color: 'var(--color-neon-amber)',
-      bg: 'rgba(255, 214, 0, 0.1)',
-      border: 'rgba(255, 214, 0, 0.3)',
+      bg: 'rgba(255, 183, 3, 0.12)',
+      border: 'rgba(255, 183, 3, 0.4)',
       defaultLabel: 'NEGOTIATING',
       pulse: true,
     },
     pairing: {
       color: 'var(--color-neon-cyan)',
-      bg: 'rgba(0, 229, 255, 0.1)',
-      border: 'rgba(0, 229, 255, 0.3)',
+      bg: 'rgba(0, 229, 255, 0.12)',
+      border: 'rgba(0, 229, 255, 0.4)',
       defaultLabel: 'PAIRING',
       pulse: true,
     },
     degraded: {
       color: 'var(--color-neon-amber)',
-      bg: 'rgba(255, 214, 0, 0.1)',
-      border: 'rgba(255, 214, 0, 0.3)',
+      bg: 'rgba(255, 183, 3, 0.12)',
+      border: 'rgba(255, 183, 3, 0.4)',
       defaultLabel: 'DEGRADED',
       pulse: true,
     },
     disconnected: {
       color: 'var(--color-text-muted)',
       bg: 'rgba(255, 255, 255, 0.05)',
-      border: 'rgba(255, 255, 255, 0.1)',
+      border: 'rgba(255, 255, 255, 0.12)',
       defaultLabel: 'OFFLINE',
       pulse: false,
     },
     error: {
       color: 'var(--color-neon-red)',
-      bg: 'rgba(255, 23, 68, 0.1)',
-      border: 'rgba(255, 23, 68, 0.3)',
+      bg: 'rgba(255, 42, 85, 0.12)',
+      border: 'rgba(255, 42, 85, 0.4)',
       defaultLabel: 'ERROR',
       pulse: true,
     },
@@ -72,33 +72,38 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
       style={{
         display: 'inline-flex',
         alignItems: 'center',
-        gap: '6px',
+        gap: '7px',
         padding: '3px 10px',
-        borderRadius: '20px',
-        backgroundColor: current.bg,
-        border: `1px solid ${current.border}`,
+        borderRadius: '12px',
+        background: 'linear-gradient(180deg, #0c1018 0%, #06090e 100%)',
+        borderTop: '1px solid rgba(255, 255, 255, 0.12)',
+        borderLeft: '1px solid rgba(255, 255, 255, 0.08)',
+        borderBottom: '1px solid #000000',
+        borderRight: '1px solid #000000',
+        boxShadow: 'inset 0 1px 3px rgba(0, 0, 0, 0.8), 0 2px 4px rgba(0, 0, 0, 0.4)',
         color: current.color,
         fontFamily: 'var(--font-mono)',
         fontSize: '0.75rem',
-        fontWeight: 600,
+        fontWeight: 700,
         letterSpacing: '0.08em',
         textTransform: 'uppercase',
       }}
     >
       {showDot && (
         <span
+          className={`retro-led ${current.pulse ? 'animate-pulse-glow' : ''}`}
           style={{
-            width: '7px',
-            height: '7px',
+            width: '8px',
+            height: '8px',
             borderRadius: '50%',
             backgroundColor: current.color,
-            boxShadow: `0 0 6px ${current.color}`,
+            boxShadow: `0 0 8px ${current.color}, inset 0 1px 1px rgba(255, 255, 255, 0.8)`,
             display: 'inline-block',
+            flexShrink: 0,
           }}
-          className={current.pulse ? 'animate-pulse-glow' : ''}
         />
       )}
-      <span>{displayLabel}</span>
+      <span style={{ textShadow: `0 0 10px ${current.color}60` }}>{displayLabel}</span>
     </div>
   );
 };

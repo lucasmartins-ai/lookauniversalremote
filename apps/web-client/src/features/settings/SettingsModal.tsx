@@ -41,21 +41,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Settings & Calibration"
+      title="Hardware Settings & Calib"
       footer={
         <Button variant="primary" size="sm" onClick={onClose}>
-          DONE
+          SALVAR & FECHAR
         </Button>
       }
     >
-      {/* Sub-tab navigation */}
+      {/* Sub-tab navigation (3D Keycaps Bar) */}
       <div
         style={{
           display: 'flex',
           gap: '6px',
           marginBottom: '16px',
-          borderBottom: '1px solid var(--color-border-subtle)',
-          paddingBottom: '8px',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+          paddingBottom: '10px',
           flexWrap: 'wrap',
         }}
       >
@@ -65,7 +65,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           leftIcon={<SettingsIcon size={14} />}
           onClick={() => setActiveTab('general')}
         >
-          GENERAL
+          GERAL
         </Button>
         <Button
           variant={activeTab === 'context' ? 'primary' : 'ghost'}
@@ -89,7 +89,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           leftIcon={<Compass size={14} />}
           onClick={() => setActiveTab('gyro')}
         >
-          GYROSCOPE
+          GIROSCÓPIO
         </Button>
         <Button
           variant={activeTab === 'trackpad' ? 'primary' : 'ghost'}
@@ -120,112 +120,108 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       ) : activeTab === 'trackpad' ? (
         <TrackpadSettingsTab settings={settings} onUpdateSettings={onUpdateSettings} />
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-
-        {/* Haptics Toggle */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '10px 12px',
-            borderRadius: '8px',
-            backgroundColor: 'var(--color-surface-card)',
-            border: '1px solid var(--color-border-subtle)',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <Vibrate size={18} color="var(--color-neon-cyan)" />
-            <div>
-              <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>Haptic Feedback</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>
-                Vibrate on button taps and triggers
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {/* Haptics Toggle */}
+          <div
+            className="neo-raised"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '12px 14px',
+              borderRadius: '10px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <Vibrate size={18} color="var(--color-neon-cyan)" />
+              <div>
+                <div style={{ fontWeight: 800, fontSize: '0.9rem', fontFamily: 'var(--font-display)' }}>Feedback Tátil (Haptics)</div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-secondary)' }}>
+                  Vibração física ao tocar teclas e gatilhos
+                </div>
               </div>
             </div>
+            <input
+              type="checkbox"
+              checked={settings.hapticsEnabled}
+              onChange={(e) => onUpdateSettings({ hapticsEnabled: e.target.checked })}
+              style={{ width: '20px', height: '20px', accentColor: 'var(--color-neon-cyan)', cursor: 'pointer' }}
+            />
           </div>
-          <input
-            type="checkbox"
-            checked={settings.hapticsEnabled}
-            onChange={(e) => onUpdateSettings({ hapticsEnabled: e.target.checked })}
-            style={{ width: '18px', height: '18px', accentColor: 'var(--color-neon-cyan)' }}
-          />
-        </div>
 
-        {/* Screen Wake Lock Toggle */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '10px 12px',
-            borderRadius: '8px',
-            backgroundColor: 'var(--color-surface-card)',
-            border: '1px solid var(--color-border-subtle)',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <Smartphone size={18} color="var(--color-neon-green)" />
-            <div>
-              <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>Screen Wake Lock</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>
-                Prevent phone display from dimming
+          {/* Screen Wake Lock Toggle */}
+          <div
+            className="neo-raised"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '12px 14px',
+              borderRadius: '10px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <Smartphone size={18} color="var(--color-neon-green)" />
+              <div>
+                <div style={{ fontWeight: 800, fontSize: '0.9rem', fontFamily: 'var(--font-display)' }}>Trava de Tela Ativa (Wake Lock)</div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-secondary)' }}>
+                  Impede que a tela do celular apague durante o uso
+                </div>
               </div>
             </div>
+            <input
+              type="checkbox"
+              checked={settings.wakeLockEnabled}
+              onChange={(e) => onUpdateSettings({ wakeLockEnabled: e.target.checked })}
+              style={{ width: '20px', height: '20px', accentColor: 'var(--color-neon-green)', cursor: 'pointer' }}
+            />
           </div>
-          <input
-            type="checkbox"
-            checked={settings.wakeLockEnabled}
-            onChange={(e) => onUpdateSettings({ wakeLockEnabled: e.target.checked })}
-            style={{ width: '18px', height: '18px', accentColor: 'var(--color-neon-green)' }}
-          />
-        </div>
 
-        {/* Telemetry Detail Toggle */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '10px 12px',
-            borderRadius: '8px',
-            backgroundColor: 'var(--color-surface-card)',
-            border: '1px solid var(--color-border-subtle)',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <Activity size={18} color="var(--color-neon-amber)" />
-            <div>
-              <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>Telemetry Overlay</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>
-                Always display real-time latency HUD
+          {/* Telemetry Detail Toggle */}
+          <div
+            className="neo-raised"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '12px 14px',
+              borderRadius: '10px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <Activity size={18} color="var(--color-neon-amber)" />
+              <div>
+                <div style={{ fontWeight: 800, fontSize: '0.9rem', fontFamily: 'var(--font-display)' }}>Overlay de Telemetria HUD</div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-secondary)' }}>
+                  Exibir latência RTT e pacotes 120Hz em tempo real
+                </div>
               </div>
             </div>
+            <input
+              type="checkbox"
+              checked={settings.showTelemetryDetails}
+              onChange={(e) => onUpdateSettings({ showTelemetryDetails: e.target.checked })}
+              style={{ width: '20px', height: '20px', accentColor: 'var(--color-neon-amber)', cursor: 'pointer' }}
+            />
           </div>
-          <input
-            type="checkbox"
-            checked={settings.showTelemetryDetails}
-            onChange={(e) => onUpdateSettings({ showTelemetryDetails: e.target.checked })}
-            style={{ width: '18px', height: '18px', accentColor: 'var(--color-neon-amber)' }}
-          />
-        </div>
 
-        {/* Disconnect Action */}
-        {isConnected && onDisconnect && (
-          <div style={{ marginTop: '8px' }}>
-            <Button
-              variant="danger"
-              fullWidth
-              leftIcon={<PowerOff size={16} />}
-              onClick={() => {
-                onDisconnect();
-                onClose();
-              }}
-            >
-              DISCONNECT SESSION
-            </Button>
-          </div>
-        )}
-      </div>
+          {/* Disconnect Action */}
+          {isConnected && onDisconnect && (
+            <div style={{ marginTop: '6px' }}>
+              <Button
+                variant="danger"
+                fullWidth
+                leftIcon={<PowerOff size={16} />}
+                onClick={() => {
+                  onDisconnect();
+                  onClose();
+                }}
+              >
+                DESCONECTAR DISPOSITIVO
+              </Button>
+            </div>
+          )}
+        </div>
       )}
     </Modal>
   );

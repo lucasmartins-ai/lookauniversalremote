@@ -51,8 +51,7 @@ impl Default for HostKeyPair {
 
 /// Computes an HMAC-SHA256 signature over data using the provided secret key.
 pub fn compute_hmac(key: &[u8], data: &[u8]) -> [u8; 32] {
-    let mut mac = HmacSha256::new_from_slice(key)
-        .expect("HMAC can take key of any size");
+    let mut mac = HmacSha256::new_from_slice(key).expect("HMAC can take key of any size");
     mac.update(data);
     let result = mac.finalize();
     let mut out = [0u8; 32];

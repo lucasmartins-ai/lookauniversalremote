@@ -1,11 +1,7 @@
-use lookaremote_host_daemon::drivers::{
-    MockGamepadDriver, MockKeyboardDriver, MockMouseDriver,
-};
+use lookaremote_host_daemon::drivers::{MockGamepadDriver, MockKeyboardDriver, MockMouseDriver};
 use lookaremote_host_daemon::input::events::InputEvent;
 use lookaremote_host_daemon::input::router::InputRouter;
-use lookaremote_protocol::messages::{
-    KeyboardMessage, MediaMessage, TouchpadMessage,
-};
+use lookaremote_protocol::messages::{KeyboardMessage, MediaMessage, TouchpadMessage};
 
 #[test]
 fn test_input_router_touchpad_routing() {
@@ -23,7 +19,9 @@ fn test_input_router_touchpad_routing() {
         scroll_h: 0,
         buttons_mask: 0,
     });
-    router.route_event(&touch_move).expect("routing touchpad move should succeed");
+    router
+        .route_event(&touch_move)
+        .expect("routing touchpad move should succeed");
 
     // 2. Scroll Wheel
     let touch_scroll = InputEvent::Touchpad(TouchpadMessage {
@@ -33,7 +31,9 @@ fn test_input_router_touchpad_routing() {
         scroll_h: -2,
         buttons_mask: 0,
     });
-    router.route_event(&touch_scroll).expect("routing touchpad scroll should succeed");
+    router
+        .route_event(&touch_scroll)
+        .expect("routing touchpad scroll should succeed");
 
     // 3. Mouse Button Down & Up
     let touch_button_down = InputEvent::Touchpad(TouchpadMessage {
@@ -43,7 +43,9 @@ fn test_input_router_touchpad_routing() {
         scroll_h: 0,
         buttons_mask: 0x01, // Left button down
     });
-    router.route_event(&touch_button_down).expect("routing button down should succeed");
+    router
+        .route_event(&touch_button_down)
+        .expect("routing button down should succeed");
 
     let touch_button_up = InputEvent::Touchpad(TouchpadMessage {
         dx: 0,
@@ -52,7 +54,9 @@ fn test_input_router_touchpad_routing() {
         scroll_h: 0,
         buttons_mask: 0x00, // Left button up
     });
-    router.route_event(&touch_button_up).expect("routing button up should succeed");
+    router
+        .route_event(&touch_button_up)
+        .expect("routing button up should succeed");
 
     // 4. Tap to click pulse (Bit 3)
     let touch_tap = InputEvent::Touchpad(TouchpadMessage {
@@ -62,7 +66,9 @@ fn test_input_router_touchpad_routing() {
         scroll_h: 0,
         buttons_mask: 0x08,
     });
-    router.route_event(&touch_tap).expect("routing tap click should succeed");
+    router
+        .route_event(&touch_tap)
+        .expect("routing tap click should succeed");
 }
 
 #[test]
@@ -79,14 +85,18 @@ fn test_input_router_keyboard_and_media_routing() {
         state: 1, // Down
         modifiers: 0x02,
     });
-    router.route_event(&key_event).expect("routing key event should succeed");
+    router
+        .route_event(&key_event)
+        .expect("routing key event should succeed");
 
     // 2. Media event: Volume Up (5)
     let media_event = InputEvent::Media(MediaMessage {
         media_action: 5,
         reserved: 0,
     });
-    router.route_event(&media_event).expect("routing media event should succeed");
+    router
+        .route_event(&media_event)
+        .expect("routing media event should succeed");
 }
 
 #[test]

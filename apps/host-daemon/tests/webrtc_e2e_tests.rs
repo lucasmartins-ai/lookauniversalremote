@@ -37,7 +37,8 @@ async fn test_packet_handler_decoding_and_watchdog_feed() {
     };
     let header = Header::new(MessageType::Motion, HeaderFlags::empty(), 1);
     let packet_motion = Packet::new(header, Payload::Motion(motion_msg));
-    let encoded_motion = encode_packet(&packet_motion).expect("Encoding motion packet must succeed");
+    let encoded_motion =
+        encode_packet(&packet_motion).expect("Encoding motion packet must succeed");
 
     // Sleep a tiny bit to measure feed
     tokio::time::sleep(Duration::from_millis(15)).await;
@@ -113,8 +114,10 @@ async fn test_webrtc_loopback_datachannel_end_to_end() {
         .expect("Client peer connection creation failed");
 
     // Connect ICE candidates between peers with pending candidate queues
-    let host_candidates_queue = Arc::new(tokio::sync::Mutex::new(Vec::<RTCIceCandidateInit>::new()));
-    let client_candidates_queue = Arc::new(tokio::sync::Mutex::new(Vec::<RTCIceCandidateInit>::new()));
+    let host_candidates_queue =
+        Arc::new(tokio::sync::Mutex::new(Vec::<RTCIceCandidateInit>::new()));
+    let client_candidates_queue =
+        Arc::new(tokio::sync::Mutex::new(Vec::<RTCIceCandidateInit>::new()));
 
     let host_pc_clone = Arc::clone(&host_pc);
     let client_pc_clone = Arc::clone(&client_pc);

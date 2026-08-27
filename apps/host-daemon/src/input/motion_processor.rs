@@ -140,7 +140,13 @@ impl MotionProcessor {
         self.subpixel_accumulator_x = total_x.fract();
         self.subpixel_accumulator_y = total_y.fract();
 
-        trace!(dx, dy, omega_x, omega_y, "MotionProcessor calculated mouse delta");
+        trace!(
+            dx,
+            dy,
+            omega_x,
+            omega_y,
+            "MotionProcessor calculated mouse delta"
+        );
         (dx, dy)
     }
 
@@ -171,13 +177,21 @@ impl MotionProcessor {
             omega_y = -omega_y;
         }
 
-        let delta_rx = (omega_x * self.config.stick_sensitivity_x * Self::STICK_DEFLECTION_SCALE) as i32;
-        let delta_ry = (omega_y * self.config.stick_sensitivity_y * Self::STICK_DEFLECTION_SCALE) as i32;
+        let delta_rx =
+            (omega_x * self.config.stick_sensitivity_x * Self::STICK_DEFLECTION_SCALE) as i32;
+        let delta_ry =
+            (omega_y * self.config.stick_sensitivity_y * Self::STICK_DEFLECTION_SCALE) as i32;
 
         let new_rx = (base_stick_rx as i32 + delta_rx).clamp(-32768, 32767) as i16;
         let new_ry = (base_stick_ry as i32 + delta_ry).clamp(-32768, 32767) as i16;
 
-        trace!(base_rx = base_stick_rx, new_rx, base_ry = base_stick_ry, new_ry, "MotionProcessor calculated additive stick");
+        trace!(
+            base_rx = base_stick_rx,
+            new_rx,
+            base_ry = base_stick_ry,
+            new_ry,
+            "MotionProcessor calculated additive stick"
+        );
         (new_rx, new_ry)
     }
 

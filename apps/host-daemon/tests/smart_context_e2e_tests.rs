@@ -36,8 +36,11 @@ async fn test_smart_context_debounce_and_mode_switching() {
         ],
     };
 
-    let matcher = Arc::new(ProfileMatcher::from_config(&config).expect("Matcher creation succeeds"));
-    let arbitrator = Arc::new(Mutex::new(ContextArbitrator::new(TargetControlMode::Trackpad)));
+    let matcher =
+        Arc::new(ProfileMatcher::from_config(&config).expect("Matcher creation succeeds"));
+    let arbitrator = Arc::new(Mutex::new(ContextArbitrator::new(
+        TargetControlMode::Trackpad,
+    )));
 
     let watcher = ContextWatcher::new(
         Arc::clone(&detector) as Arc<dyn lookaremote_host_daemon::context::WindowDetector>,
@@ -50,29 +53,47 @@ async fn test_smart_context_debounce_and_mode_switching() {
     let mut debounce_state = WatcherDebounceState::default();
 
     // 1. Initial State (Empty window) -> matches DefaultMode (Trackpad)
-    let ev1 = watcher.poll_step(&mut debounce_state).await.expect("Initial poll step succeeds");
+    let ev1 = watcher
+        .poll_step(&mut debounce_state)
+        .await
+        .expect("Initial poll step succeeds");
     assert_eq!(ev1.arbitration.active_mode, TargetControlMode::Trackpad);
     assert_eq!(ev1.arbitration.source, ArbitrationSource::DefaultMode);
-    let rx1 = subscriber.recv().await.expect("Initial broadcast event received");
+    let rx1 = subscriber
+        .recv()
+        .await
+        .expect("Initial broadcast event received");
     assert_eq!(rx1.arbitration.active_mode, TargetControlMode::Trackpad);
 
     // 2. Change active window to "steam" (First observation: debounce timer starts, returns None)
     detector.set_active_window(ActiveWindowInfo::new("steam", "Steam", None, 1001));
     let pending = watcher.poll_step(&mut debounce_state).await;
-    assert!(pending.is_none(), "Debounce window is stabilizing; should return None");
+    assert!(
+        pending.is_none(),
+        "Debounce window is stabilizing; should return None"
+    );
 
     // 3. Fast forward past debounce window (50ms)
     tokio::time::sleep(Duration::from_millis(60)).await;
 
     // 4. Second observation: Debounce period confirmed -> Switches to Gamepad
-    let ev2 = watcher.poll_step(&mut debounce_state).await.expect("Confirmed poll step succeeds");
+    let ev2 = watcher
+        .poll_step(&mut debounce_state)
+        .await
+        .expect("Confirmed poll step succeeds");
     assert_eq!(ev2.arbitration.active_mode, TargetControlMode::Gamepad);
     assert_eq!(ev2.arbitration.source, ArbitrationSource::ProfileMatch);
-    assert_eq!(ev2.arbitration.matched_profile_name.as_deref(), Some("Steam Games"));
+    assert_eq!(
+        ev2.arbitration.matched_profile_name.as_deref(),
+        Some("Steam Games")
+    );
     assert!(ev2.arbitration.mode_changed);
 
     // Verify event received on broadcast subscriber
-    let rx2 = subscriber.recv().await.expect("Broadcast event for Gamepad received");
+    let rx2 = subscriber
+        .recv()
+        .await
+        .expect("Broadcast event for Gamepad received");
     assert_eq!(rx2.arbitration.active_mode, TargetControlMode::Gamepad);
 
     // 5. Client sends explicit mode switch request (Manual Override to Media Remote)
@@ -85,7 +106,10 @@ async fn test_smart_context_debounce_and_mode_switching() {
     assert_eq!(switch_res.source, ArbitrationSource::ManualOverride);
 
     // 6. Even when window stays on "steam", client manual override holds
-    let ev3 = watcher.poll_step(&mut debounce_state).await.expect("Poll step succeeds");
+    let ev3 = watcher
+        .poll_step(&mut debounce_state)
+        .await
+        .expect("Poll step succeeds");
     assert_eq!(ev3.arbitration.active_mode, TargetControlMode::MediaRemote);
     assert_eq!(ev3.arbitration.source, ArbitrationSource::ManualOverride);
 }

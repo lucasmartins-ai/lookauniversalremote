@@ -94,8 +94,8 @@ impl Header {
             return Err(ProtocolError::InvalidVersion(version));
         }
 
-        let msg_type = MessageType::from_u8(bytes[1])
-            .ok_or(ProtocolError::UnknownMessageType(bytes[1]))?;
+        let msg_type =
+            MessageType::from_u8(bytes[1]).ok_or(ProtocolError::UnknownMessageType(bytes[1]))?;
 
         let flags = HeaderFlags(bytes[2]);
         let sequence = u16::from_le_bytes([bytes[3], bytes[4]]);

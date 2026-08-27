@@ -3,8 +3,7 @@
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use lookaremote_protocol::{
-    decode_packet, encode_packet, Header, HeaderFlags, MessageType, Packet, Payload,
-    messages::*,
+    decode_packet, encode_packet, messages::*, Header, HeaderFlags, MessageType, Packet, Payload,
 };
 
 fn bench_all_codecs_encode(c: &mut Criterion) {
@@ -28,7 +27,9 @@ fn bench_all_codecs_encode(c: &mut Criterion) {
     let gamepad_pkt = Packet::new(
         Header::new(MessageType::GamepadFull, HeaderFlags::empty(), 101),
         Payload::GamepadFull(GamepadFullMessage {
-            buttons: gamepad::buttons::BTN_SOUTH | gamepad::buttons::BTN_R1 | gamepad::buttons::DPAD_UP,
+            buttons: gamepad::buttons::BTN_SOUTH
+                | gamepad::buttons::BTN_R1
+                | gamepad::buttons::DPAD_UP,
             stick_lx: -15000,
             stick_ly: 20000,
             stick_rx: 1200,
@@ -56,9 +57,9 @@ fn bench_all_codecs_encode(c: &mut Criterion) {
     let keyboard_pkt = Packet::new(
         Header::new(MessageType::Keyboard, HeaderFlags::empty(), 104),
         Payload::Keyboard(KeyboardMessage {
-            key_code: 0x04, // 'A'
-            state: 1,       // KeyDown
-            modifiers: 0x02,// Shift
+            key_code: 0x04,  // 'A'
+            state: 1,        // KeyDown
+            modifiers: 0x02, // Shift
         }),
     );
 
@@ -181,7 +182,7 @@ fn bench_all_codecs_decode(c: &mut Criterion) {
 
     let haptic_raw = [
         0x01, 0x0A, 0x00, 0x03, 0x00, // Header (0x0A: HapticEvent)
-        0x02, 0xFF, 0x96, 0x00,       // motor_index (2), intensity (255), duration_ms (150)
+        0x02, 0xFF, 0x96, 0x00, // motor_index (2), intensity (255), duration_ms (150)
     ];
 
     group.bench_function("decode_motion_0x01", |b| {

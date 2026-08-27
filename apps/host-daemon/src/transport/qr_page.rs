@@ -5,7 +5,12 @@ use qrcode::render::svg;
 use qrcode::QrCode;
 
 /// Generates a standalone Cyberpunk / OLED dark-mode HTML page rendering the pairing QR code.
-pub fn render_qr_html(pairing_uri: &str, host_ip: &str, port: u16, active_peers: usize) -> Html<String> {
+pub fn render_qr_html(
+    pairing_uri: &str,
+    host_ip: &str,
+    port: u16,
+    active_peers: usize,
+) -> Html<String> {
     let svg_code = match QrCode::new(pairing_uri.as_bytes()) {
         Ok(code) => code
             .render::<svg::Color>()

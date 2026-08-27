@@ -73,7 +73,9 @@ pub fn decode_packet(bytes: &[u8]) -> Result<Packet, ProtocolError> {
     }
 
     let header = Header::decode(&bytes[..HEADER_SIZE])?;
-    let expected_payload_size = header.msg_type.payload_size()
+    let expected_payload_size = header
+        .msg_type
+        .payload_size()
         .ok_or(ProtocolError::UnsupportedMessageType(header.msg_type))?;
 
     let payload_bytes = &bytes[HEADER_SIZE..];
@@ -86,16 +88,30 @@ pub fn decode_packet(bytes: &[u8]) -> Result<Packet, ProtocolError> {
 
     let payload = match header.msg_type {
         MessageType::Motion => Payload::Motion(MotionMessage::decode_payload(payload_bytes)?),
-        MessageType::GamepadFull => Payload::GamepadFull(GamepadFullMessage::decode_payload(payload_bytes)?),
+        MessageType::GamepadFull => {
+            Payload::GamepadFull(GamepadFullMessage::decode_payload(payload_bytes)?)
+        }
         MessageType::Touchpad => Payload::Touchpad(TouchpadMessage::decode_payload(payload_bytes)?),
         MessageType::Keyboard => Payload::Keyboard(KeyboardMessage::decode_payload(payload_bytes)?),
         MessageType::Media => Payload::Media(MediaMessage::decode_payload(payload_bytes)?),
-        MessageType::ModeSwitch => Payload::ModeSwitch(ModeSwitchMessage::decode_payload(payload_bytes)?),
-        MessageType::Heartbeat => Payload::Heartbeat(HeartbeatMessage::decode_payload(payload_bytes)?),
-        MessageType::HapticEvent => Payload::HapticEvent(HapticEventMessage::decode_payload(payload_bytes)?),
-        MessageType::SlotAssignment => Payload::SlotAssignment(SlotAssignmentMessage::decode_payload(payload_bytes)?),
-        MessageType::TvCommand => Payload::TvCommand(TvCommandMessage::decode_payload(payload_bytes)?),
-        MessageType::TvTextInput => Payload::TvTextInput(TvTextInputMessage::decode_payload(payload_bytes)?),
+        MessageType::ModeSwitch => {
+            Payload::ModeSwitch(ModeSwitchMessage::decode_payload(payload_bytes)?)
+        }
+        MessageType::Heartbeat => {
+            Payload::Heartbeat(HeartbeatMessage::decode_payload(payload_bytes)?)
+        }
+        MessageType::HapticEvent => {
+            Payload::HapticEvent(HapticEventMessage::decode_payload(payload_bytes)?)
+        }
+        MessageType::SlotAssignment => {
+            Payload::SlotAssignment(SlotAssignmentMessage::decode_payload(payload_bytes)?)
+        }
+        MessageType::TvCommand => {
+            Payload::TvCommand(TvCommandMessage::decode_payload(payload_bytes)?)
+        }
+        MessageType::TvTextInput => {
+            Payload::TvTextInput(TvTextInputMessage::decode_payload(payload_bytes)?)
+        }
         MessageType::GamepadDelta | MessageType::Ack => {
             return Err(ProtocolError::UnsupportedMessageType(header.msg_type));
         }
