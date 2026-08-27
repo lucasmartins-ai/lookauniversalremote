@@ -40,6 +40,7 @@ impl Default for WebRtcConfig {
 pub async fn create_peer_connection(
     _config: &WebRtcConfig,
 ) -> Result<Arc<RTCPeerConnection>, webrtc::Error> {
+    let _ = rustls::crypto::ring::default_provider().install_default();
     let mut media_engine = MediaEngine::default();
     media_engine.register_default_codecs()?;
 

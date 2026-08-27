@@ -1,13 +1,14 @@
 //! Live Smart TV Network Command & Text Input Dispatcher.
 
-use crate::tv::commands::{
-    android_keycode_for_command, lg_key_for_command, roku_keypress_for_command,
-    samsung_key_for_command,
-};
+use crate::tv::adapters::android_tv::AndroidGoogleTvAdapter;
+use crate::tv::adapters::traits::TvAdapter;
+use crate::tv::commands::{lg_key_for_command, roku_keypress_for_command, samsung_key_for_command};
+use crate::tv::discovery::models::{DiscoverySource, TvDevice};
 use lookaremote_protocol::messages::tv_commands;
 use lookaremote_protocol::messages::tv_target_devices::*;
 use lookaremote_protocol::messages::{TvCommandMessage, TvTextInputMessage};
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Arc;
 use std::sync::RwLock;
 use std::time::Duration;
 use tracing::{debug, info};
@@ -26,6 +27,7 @@ pub struct TvDispatcher {
     stats: TvDispatcherStats,
     tv_ip: RwLock<String>,
     http_client: reqwest::Client,
+    android_adapter: Arc<AndroidGoogleTvAdapter>,
 }
 
 impl Default for TvDispatcher {
@@ -42,10 +44,13 @@ impl TvDispatcher {
             .build()
             .unwrap_or_default();
 
+        let android_adapter = Arc::new(AndroidGoogleTvAdapter::new());
+
         Self {
             stats: TvDispatcherStats::default(),
             tv_ip: RwLock::new("192.168.1.102".to_string()),
             http_client,
+            android_adapter,
         }
     }
 
@@ -53,7 +58,23 @@ impl TvDispatcher {
     pub fn set_tv_ip(&self, ip: String) {
         if let Ok(mut lock) = self.tv_ip.write() {
             info!("Updated Target Smart TV IP to: {ip}");
-            *lock = ip;
+            *lock = ip.clone();
+        }
+
+        let dev = TvDevice::new(
+            format!("device-{}", ip),
+            ip,
+            "Smart TV".to_string(),
+            "Google".to_string(),
+            ANDROID_GOOGLE_TV,
+            8009,
+            DiscoverySource::Manual,
+        );
+        let adapter = Arc::clone(&self.android_adapter);
+        if tokio::runtime::Handle::try_current().is_ok() {
+            tokio::spawn(async move {
+                let _ = adapter.connect(&dev).await;
+            });
         }
     }
 
@@ -71,45 +92,38 @@ impl TvDispatcher {
             .commands_dispatched
             .fetch_add(1, Ordering::Relaxed);
         let tv_ip = self.get_tv_ip();
+        let cmd_code = msg.command_code;
 
         match msg.target_device {
             ANDROID_GOOGLE_TV => {
-                if let Some(keycode) = android_keycode_for_command(msg.command_code) {
-                    let cmd_str = format!("input keyevent {}", keycode);
-                    let ip_clone = tv_ip.clone();
-                    let client = self.http_client.clone();
+                let adapter = Arc::clone(&self.android_adapter);
+                let ip_clone = tv_ip.clone();
 
-                    if tokio::runtime::Handle::try_current().is_ok() {
-                        tokio::spawn(async move {
-                            // 1. Try sending via Google Cast HTTP Remote endpoint (port 8008 / 8009)
-                            let cast_endpoint =
-                                format!("http://{}:8008/setup/app_command", ip_clone);
-                            let _ = client
-                                .post(&cast_endpoint)
-                                .json(&serde_json::json!({ "keycode": keycode, "action": "click" }))
-                                .send()
-                                .await;
-
-                            // 2. Try raw TCP ADB / Remote command on standard ports
-                            if let Ok(mut stream) =
-                                tokio::net::TcpStream::connect(format!("{}:5555", ip_clone)).await
-                            {
-                                use tokio::io::AsyncWriteExt;
-                                let raw_adb_cmd = format!("shell:input keyevent {}\n", keycode);
-                                let _ = stream.write_all(raw_adb_cmd.as_bytes()).await;
-                            }
-
-                            debug!(ip = %ip_clone, keycode = keycode, "Dispatched Android TV keyevent over network");
-                        });
-                    }
-
-                    Ok(cmd_str)
-                } else {
-                    Err(format!(
-                        "Unsupported Android TV command: {}",
-                        msg.command_code
-                    ))
+                if tokio::runtime::Handle::try_current().is_ok() {
+                    tokio::spawn(async move {
+                        let dev = TvDevice::new(
+                            format!("device-{}", ip_clone),
+                            ip_clone,
+                            "Smart TV".to_string(),
+                            "Google".to_string(),
+                            ANDROID_GOOGLE_TV,
+                            8009,
+                            DiscoverySource::Probe,
+                        );
+                        let _ = adapter.connect(&dev).await;
+                        if let Err(e) = adapter.send_command(cmd_code).await {
+                            debug!("Android TV adapter send_command error: {e}");
+                        }
+                    });
                 }
+
+                let return_str = if let Some(kc) = crate::tv::commands::android_keycode_for_command(cmd_code) {
+                    format!("input keyevent {}", kc)
+                } else {
+                    format!("ANDROID_TV_CMD:{}", cmd_code)
+                };
+
+                Ok(return_str)
             }
 
             SAMSUNG_TIZEN => {
@@ -228,16 +242,11 @@ impl TvDispatcher {
         let tv_ip = self.get_tv_ip();
         let client = self.http_client.clone();
         let text_clone = text.clone();
+        let adapter = Arc::clone(&self.android_adapter);
 
         if tokio::runtime::Handle::try_current().is_ok() {
             tokio::spawn(async move {
-                if let Ok(mut stream) =
-                    tokio::net::TcpStream::connect(format!("{}:5555", tv_ip)).await
-                {
-                    use tokio::io::AsyncWriteExt;
-                    let raw_text_cmd = format!("shell:input text '{}'\n", text_clone);
-                    let _ = stream.write_all(raw_text_cmd.as_bytes()).await;
-                }
+                let _ = adapter.send_text(&text_clone).await;
 
                 let roku_text_endpoint = format!(
                     "http://{}:8060/input?text={}",

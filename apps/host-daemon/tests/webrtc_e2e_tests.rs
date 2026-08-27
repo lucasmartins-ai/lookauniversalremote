@@ -101,6 +101,7 @@ async fn test_packet_handler_decoding_and_watchdog_feed() {
 
 #[tokio::test]
 async fn test_webrtc_loopback_datachannel_end_to_end() {
+    let _ = rustls::crypto::ring::default_provider().install_default();
     let config = WebRtcConfig::default();
 
     // 1. Create Host PeerConnection
@@ -108,10 +109,23 @@ async fn test_webrtc_loopback_datachannel_end_to_end() {
         .await
         .expect("Host peer connection creation failed");
 
-    // 2. Create Client PeerConnection
-    let client_pc = create_peer_connection(&config)
-        .await
-        .expect("Client peer connection creation failed");
+    // 2. Create Client PeerConnection (with DTLS Client role for loopback testing)
+    let mut client_media_engine = webrtc::api::media_engine::MediaEngine::default();
+    client_media_engine.register_default_codecs().unwrap();
+    let mut client_setting_engine = webrtc::api::setting_engine::SettingEngine::default();
+    client_setting_engine
+        .set_answering_dtls_role(webrtc::dtls_transport::dtls_role::DTLSRole::Client)
+        .unwrap();
+    let client_api = webrtc::api::APIBuilder::new()
+        .with_media_engine(client_media_engine)
+        .with_setting_engine(client_setting_engine)
+        .build();
+    let client_pc = Arc::new(
+        client_api
+            .new_peer_connection(webrtc::peer_connection::configuration::RTCConfiguration::default())
+            .await
+            .expect("Client peer connection creation failed"),
+    );
 
     // Connect ICE candidates between peers with pending candidate queues
     let host_candidates_queue =
