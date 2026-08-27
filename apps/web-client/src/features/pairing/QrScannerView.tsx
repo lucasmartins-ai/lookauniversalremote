@@ -88,7 +88,7 @@ export const QrScannerView: React.FC<QrScannerViewProps> = ({ onScan, onError })
                 setTimeout(() => {
                   isScanningRef.current = false;
                   setIsSuccess(false);
-                }, 3500);
+                }, 1500);
               }
             }
             if (error && error.name !== 'NotFoundException') {

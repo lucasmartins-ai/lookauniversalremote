@@ -117,8 +117,11 @@ export function parsePairingUri(raw: string): PairingParams {
   } else if (trimmed.includes('h=') || trimmed.includes('k=')) {
     paramString = trimmed;
   } else {
-    throw new Error('Unrecognized QR code format. Expected LookARemote connect URL.');
+    throw new Error('Formato de QR Code não reconhecido. Aponte para o QR Code do LookARemote.');
   }
+
+  // Normalize HTML entities like &amp;
+  paramString = paramString.replace(/&amp;/g, '&');
 
   const searchParams = new URLSearchParams(paramString);
   const host = searchParams.get('h') || searchParams.get('host');
