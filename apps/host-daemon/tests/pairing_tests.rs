@@ -145,6 +145,6 @@ fn test_pairing_uri_construction() {
     let uri = build_pairing_uri("192.168.1.100", 8765, "deadbeef01", "cafebabe02");
     assert_eq!(
         uri,
-        "https://remote.lookaberry.com/connect#h=192.168.1.100&p=8765&k=deadbeef01&n=cafebabe02&v=1"
+        "https://lookauniversalremote.vercel.app/#h=192.168.1.100&p=8765&k=deadbeef01&n=cafebabe02&v=1"
     );
 }

@@ -31,9 +31,10 @@ pub fn build_pairing_uri(
     host_pubkey_hex: &str,
     nonce_hex: &str,
 ) -> String {
+    let base = CANONICAL_PWA_BASE_URL.trim_end_matches('/');
     format!(
-        "{}#h={}&p={}&k={}&n={}&v=1",
-        CANONICAL_PWA_BASE_URL, host_ip, port, host_pubkey_hex, nonce_hex
+        "{}/#h={}&p={}&k={}&n={}&v=1",
+        base, host_ip, port, host_pubkey_hex, nonce_hex
     )
 }
 

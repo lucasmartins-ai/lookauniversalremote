@@ -36,7 +36,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .compact()
         .init();
 
-    let config: DaemonConfig = args.clone().into();
+    let mut config: DaemonConfig = args.clone().into();
 
     // 1. Resolve Bind Address & Local LAN IP
     let host_ip = match config.bind_addr {
@@ -46,6 +46,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         None => discover_local_ip(config.allow_wan)?,
     };
+    config.bind_addr = Some(host_ip);
 
     // 2. Ephemeral Cryptographic Handshake Initialization
     let keypair = HostKeyPair::generate();
