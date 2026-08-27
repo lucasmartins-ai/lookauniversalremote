@@ -1,15 +1,19 @@
-//! Axum HTTP and WebSocket signaling endpoints for pairing and WebRTC negotiation.
+//! Axum HTTP and WebSocket signaling endpoints for pairing, WebRTC negotiation, and multi-peer party mode.
 
+use crate::core::multi_peer::PeerSlotSummary;
 use crate::core::session::{Session, SessionState};
 use crate::core::state::AppState;
 use crate::pairing::crypto::verify_pairing_proof;
+use crate::pairing::qr::build_pairing_uri;
+use crate::transport::qr_page::render_qr_html;
 use crate::transport::webrtc::{
-    create_peer_connection, setup_peer_connection_logging, WebRtcConfig,
+    create_peer_connection, setup_incoming_data_channel_listener_for_slot,
+    setup_peer_connection_logging, WebRtcConfig,
 };
 use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
-use axum::extract::State;
+use axum::extract::{Query, State};
 use axum::http::{Method, StatusCode};
-use axum::response::{IntoResponse, Json, Response};
+use axum::response::{Html, IntoResponse, Json, Response};
 use axum::routing::{get, post};
 use axum::Router;
 use futures_util::{SinkExt, StreamExt};
@@ -38,6 +42,10 @@ pub struct PairRequest {
 pub struct PairResponse {
     /// Status code string
     pub status: String,
+    /// Allocated player slot index (0 = P1, 1 = P2, 2 = P3, 3 = P4)
+    pub player_index: u8,
+    /// Allocated player color hex (e.g. #00E5FF)
+    pub player_color: String,
     /// Unique session identifier assigned to client
     pub session_id: String,
     /// Host ephemeral X25519 public key in hex
@@ -62,10 +70,21 @@ pub struct HealthResponse {
     pub status: String,
     /// Software version
     pub version: String,
-    /// Current session state
+    /// Current session state (P1)
     pub session_state: SessionState,
+    /// Number of actively connected smartphone players (0..4)
+    pub active_peers: usize,
+    /// Metadata summaries for all active player slots
+    pub peer_slots: Vec<PeerSlotSummary>,
     /// Active registered nonces count
     pub active_nonces: usize,
+}
+
+/// Query parameters passed during WebSocket signaling upgrade.
+#[derive(Debug, Clone, Deserialize)]
+pub struct SignalingQuery {
+    /// Associated session ID returned from `/api/pair`
+    pub session_id: Option<String>,
 }
 
 /// Signaling messages exchanged between Host and Web Client over WebSocket.
@@ -118,14 +137,137 @@ pub fn create_signaling_router(state: AppState) -> Router {
 
     Router::new()
         .route("/health", get(health_handler))
+        .route("/qr", get(qr_page_handler))
         .route("/api/pair", post(pair_handler))
+        .route("/api/pair-token", get(pair_token_handler))
+        .route("/api/reset-slots", post(reset_slots_handler))
+        .route("/api/tv-target", get(get_tv_target_handler).post(set_tv_target_handler))
+        .route("/api/tv-command", post(tv_command_http_handler))
         .route("/ws/signaling", get(ws_signaling_upgrade))
         .layer(cors)
         .with_state(state)
 }
 
+/// Direct TV command payload for REST HTTP execution
+#[derive(Debug, Deserialize)]
+pub struct TvCommandPayload {
+    pub command_code: Option<u16>,
+    pub target_device: Option<u8>,
+    pub text: Option<String>,
+}
+
+/// Handle direct TV commands via HTTP POST (`POST /api/tv-command`)
+pub async fn tv_command_http_handler(
+    State(state): State<AppState>,
+    Json(payload): Json<TvCommandPayload>,
+) -> Json<serde_json::Value> {
+    info!(payload = ?payload, "Received direct HTTP /api/tv-command");
+    if let Some(ref router) = state.input_router {
+        if let Some(text) = payload.text {
+            let msg = lookaremote_protocol::messages::TvTextInputMessage::from_str_truncate(&text);
+            let _ = router.route_event(&crate::input::events::InputEvent::TvTextInput(msg));
+        } else if let Some(code) = payload.command_code {
+            let target = payload.target_device.unwrap_or(lookaremote_protocol::messages::tv_target_devices::ANDROID_GOOGLE_TV);
+            let msg = lookaremote_protocol::messages::TvCommandMessage {
+                command_code: code,
+                target_device: target,
+                flags: 0,
+            };
+            let _ = router.route_event(&crate::input::events::InputEvent::TvCommand(msg));
+        }
+    }
+    Json(serde_json::json!({ "status": "ok" }))
+}
+
+/// Query current target Smart TV IP (`GET /api/tv-target`).
+pub async fn get_tv_target_handler(State(state): State<AppState>) -> Json<serde_json::Value> {
+    let current_ip = if let Some(ref router) = state.input_router {
+        let disp = router.tv_dispatcher();
+        let guard = disp.lock();
+        guard.map(|d| d.get_tv_ip()).unwrap_or_else(|_| "192.168.1.102".to_string())
+    } else {
+        "192.168.1.102".to_string()
+    };
+
+    Json(serde_json::json!({
+        "status": "ok",
+        "tv_ip": current_ip,
+        "discovered_tv": "192.168.1.102 (TCL Smart TV)",
+    }))
+}
+
+/// Update target Smart TV IP (`POST /api/tv-target`).
+pub async fn set_tv_target_handler(
+    State(state): State<AppState>,
+    Json(payload): Json<serde_json::Value>,
+) -> Json<serde_json::Value> {
+    if let Some(new_ip) = payload.get("tv_ip").and_then(|v| v.as_str()) {
+        if let Some(ref router) = state.input_router {
+            let disp = router.tv_dispatcher();
+            let mut guard = disp.lock();
+            if let Ok(ref mut d) = guard {
+                d.set_tv_ip(new_ip.to_string());
+            }
+        }
+        Json(serde_json::json!({ "status": "ok", "tv_ip": new_ip }))
+    } else {
+        Json(serde_json::json!({ "status": "error", "message": "Missing 'tv_ip' parameter" }))
+    }
+}
+
+/// Reset all player slots handler (`POST /api/reset-slots`).
+pub async fn reset_slots_handler(State(state): State<AppState>) -> Json<serde_json::Value> {
+    {
+        let mut mp = state.multi_peer.write().await;
+        mp.reset_all();
+    }
+    {
+        let mut sess = state.session.write().await;
+        *sess = None;
+    }
+    Json(serde_json::json!({
+        "status": "ok",
+        "message": "All player slots reset successfully"
+    }))
+}
+
+/// Dynamic pairing token generator for 1-click LAN pairing (`GET /api/pair-token`).
+pub async fn pair_token_handler(State(state): State<AppState>) -> Json<serde_json::Value> {
+    let host_ip_str = state
+        .config
+        .bind_addr
+        .map(|ip| ip.to_string())
+        .unwrap_or_else(|| "127.0.0.1".to_string());
+
+    let nonce = state.nonce_mgr.generate_nonce();
+    let nonce_hex = hex::encode(nonce);
+    let host_pubkey_hex = state.keypair.public_key_hex();
+
+    let pairing_uri = build_pairing_uri(
+        &host_ip_str,
+        state.config.port,
+        &host_pubkey_hex,
+        &nonce_hex,
+    );
+
+    Json(serde_json::json!({
+        "status": "ok",
+        "host": host_ip_str,
+        "port": state.config.port,
+        "host_pubkey": host_pubkey_hex,
+        "nonce": nonce_hex,
+        "pairing_uri": pairing_uri,
+        "version": 1
+    }))
+}
+
 /// Health check endpoint (`GET /health`).
 pub async fn health_handler(State(state): State<AppState>) -> Json<HealthResponse> {
+    let (active_peers, peer_slots) = {
+        let mp = state.multi_peer.read().await;
+        (mp.active_count(), mp.summaries())
+    };
+
     let session_state = {
         let lock = state.session.read().await;
         lock.as_ref()
@@ -137,8 +279,37 @@ pub async fn health_handler(State(state): State<AppState>) -> Json<HealthRespons
         status: "ok".to_string(),
         version: env!("CARGO_PKG_VERSION").to_string(),
         session_state,
+        active_peers,
+        peer_slots,
         active_nonces: state.nonce_mgr.active_count(),
     })
+}
+
+/// Standalone QR Code Pairing Page (`GET /qr`).
+pub async fn qr_page_handler(State(state): State<AppState>) -> Html<String> {
+    let host_ip_str = state
+        .config
+        .bind_addr
+        .map(|ip| ip.to_string())
+        .unwrap_or_else(|| "127.0.0.1".to_string());
+
+    let nonce = state.nonce_mgr.generate_nonce();
+    let nonce_hex = hex::encode(nonce);
+    let host_pubkey_hex = state.keypair.public_key_hex();
+
+    let pairing_uri = build_pairing_uri(
+        &host_ip_str,
+        state.config.port,
+        &host_pubkey_hex,
+        &nonce_hex,
+    );
+
+    let active_peers = {
+        let mp = state.multi_peer.read().await;
+        mp.active_count()
+    };
+
+    render_qr_html(&pairing_uri, &host_ip_str, state.config.port, active_peers)
 }
 
 /// Pairing handshake endpoint (`POST /api/pair`).
@@ -227,29 +398,62 @@ pub async fn pair_handler(
             .into_response();
     }
 
-    // 5. Generate session ID and register active session
-    let session_id = format!("{:016x}", rand::random::<u64>());
-    let mut session = Session::new(
-        session_id.clone(),
-        client_pubkey_bytes,
-        shared_secret,
-    );
-    session.set_state(SessionState::Pairing);
+    // 5. Dynamic Slot Allocation in MultiPeerSessionManager
+    let (slot_index, session_id) = {
+        let mut mp = state.multi_peer.write().await;
+        match mp.allocate_slot(client_pubkey_bytes, shared_secret, None) {
+            Ok(res) => res,
+            Err(e) => {
+                warn!("Pairing rejected: {e}");
+                return (
+                    StatusCode::CONFLICT,
+                    Json(ErrorResponse {
+                        error: "max_peers_reached".to_string(),
+                        message: "All 4 player slots (P1..P4) are currently occupied.".to_string(),
+                    }),
+                )
+                    .into_response();
+            }
+        }
+    };
 
-    {
+    let player_color = match slot_index {
+        0 => "#00E5FF",
+        1 => "#FF007F",
+        2 => "#FFE600",
+        3 => "#00FF66",
+        _ => "#00E5FF",
+    }
+    .to_string();
+
+    // Store legacy single-peer session if Slot 0
+    if slot_index == 0 {
+        let mut session = Session::new(
+            session_id.clone(),
+            client_pubkey_bytes,
+            shared_secret,
+        );
+        session.set_state(SessionState::Pairing);
         let mut lock = state.session.write().await;
         *lock = Some(session);
     }
 
-    info!(session_id = %session_id, "Client paired successfully via X25519 + HMAC-SHA256");
+    info!(
+        slot = slot_index,
+        session_id = %session_id,
+        "Client paired successfully via X25519 + HMAC-SHA256 (Allocated Player Slot {})",
+        slot_index + 1
+    );
 
     (
         StatusCode::OK,
         Json(PairResponse {
             status: "paired".to_string(),
-            session_id,
+            player_index: slot_index,
+            player_color,
+            session_id: session_id.clone(),
             host_pubkey: state.keypair.public_key_hex(),
-            signaling_ws_url: "/ws/signaling".to_string(),
+            signaling_ws_url: format!("/ws/signaling?session_id={}", session_id),
         }),
     )
         .into_response()
@@ -258,16 +462,27 @@ pub async fn pair_handler(
 /// WebSocket signaling upgrade handler (`GET /ws/signaling`).
 pub async fn ws_signaling_upgrade(
     ws: WebSocketUpgrade,
+    Query(query): Query<SignalingQuery>,
     State(state): State<AppState>,
 ) -> Response {
-    ws.on_upgrade(|socket| handle_signaling_socket(socket, state))
+    ws.on_upgrade(move |socket| handle_signaling_socket(socket, state, query.session_id))
 }
 
-/// Handles bidirectional WebSocket signaling session.
-async fn handle_signaling_socket(socket: WebSocket, state: AppState) {
+/// Handles bidirectional WebSocket signaling session for a specific player slot.
+async fn handle_signaling_socket(socket: WebSocket, state: AppState, session_id: Option<String>) {
     let (mut ws_sender, mut ws_receiver) = StreamExt::split(socket);
 
-    info!("New WebSocket signaling connection established");
+    // Resolve player slot index from session ID
+    let slot_index: u8 = if let Some(ref sid) = session_id {
+        let mp = state.multi_peer.read().await;
+        mp.find_slot_by_session_id(sid)
+            .map(|s| s.slot_index)
+            .unwrap_or(0)
+    } else {
+        0
+    };
+
+    info!(slot = slot_index, "New WebSocket signaling connection established for Player Slot {}", slot_index + 1);
 
     // Initialize WebRTC PeerConnection
     let webrtc_config = WebRtcConfig::default();
@@ -287,16 +502,24 @@ async fn handle_signaling_socket(socket: WebSocket, state: AppState) {
 
     // Store in global state
     {
-        let mut pc_lock = state.peer_connection.write().await;
-        *pc_lock = Some(Arc::clone(&peer_connection));
+        let mut pc_lock = state.peer_connections.write().await;
+        pc_lock[slot_index as usize] = Some(Arc::clone(&peer_connection));
+
+        if slot_index == 0 {
+            let mut legacy_pc = state.peer_connection.write().await;
+            *legacy_pc = Some(Arc::clone(&peer_connection));
+        }
     }
 
-    // Setup logging and incoming DataChannel listener
-    crate::transport::webrtc::setup_incoming_data_channel_listener_with_context(
+    // Setup logging and incoming DataChannel listener for this slot
+    setup_incoming_data_channel_listener_for_slot(
+        slot_index,
         &peer_connection,
         Arc::clone(&state.watchdog),
         state.event_tx.clone(),
         state.context_watcher.clone(),
+        Some(Arc::clone(&state.multi_peer)),
+        state.input_router.clone(),
     );
     setup_peer_connection_logging(&peer_connection, Arc::clone(&state.watchdog));
 
@@ -332,14 +555,23 @@ async fn handle_signaling_socket(socket: WebSocket, state: AppState) {
         ws_sender
     });
 
-    // Process incoming WebSocket signaling messages from client
+    // Process incoming WebSocket signaling messages and binary fallback input frames from client
     while let Some(Ok(ws_msg)) = ws_receiver.next().await {
         match ws_msg {
+            Message::Binary(bytes) => {
+                let _ = crate::transport::packet_handler::handle_raw_slot_packet(
+                    slot_index,
+                    &bytes,
+                    &state.watchdog,
+                    state.event_tx.as_ref(),
+                    Some(&state.multi_peer),
+                );
+            }
             Message::Text(text) => {
                 let text_str: &str = &text;
                 match serde_json::from_str::<SignalingMessage>(text_str) {
                     Ok(SignalingMessage::Offer { sdp }) => {
-                        debug!("Received SDP Offer from client");
+                        debug!(slot = slot_index, "Received SDP Offer from client");
                         let desc = match RTCSessionDescription::offer(sdp) {
                             Ok(d) => d,
                             Err(e) => {
@@ -367,7 +599,7 @@ async fn handle_signaling_socket(socket: WebSocket, state: AppState) {
                                     sdp: answer.sdp,
                                 };
                                 let _ = ice_tx.send(reply).await;
-                                debug!("Generated and dispatched SDP Answer");
+                                debug!(slot = slot_index, "Generated and dispatched SDP Answer");
                             }
                             Err(e) => {
                                 error!("Failed to create SDP Answer: {e}");
@@ -375,7 +607,7 @@ async fn handle_signaling_socket(socket: WebSocket, state: AppState) {
                         }
                     }
                     Ok(SignalingMessage::Answer { sdp }) => {
-                        debug!("Received SDP Answer from client");
+                        debug!(slot = slot_index, "Received SDP Answer from client");
                         let desc = match RTCSessionDescription::answer(sdp) {
                             Ok(d) => d,
                             Err(e) => {
@@ -392,7 +624,7 @@ async fn handle_signaling_socket(socket: WebSocket, state: AppState) {
                         sdp_mid,
                         sdp_mline_index,
                     }) => {
-                        debug!("Received ICE Candidate from client: {}", candidate);
+                        debug!(slot = slot_index, "Received ICE Candidate from client: {}", candidate);
                         let candidate_init = RTCIceCandidateInit {
                             candidate,
                             sdp_mid,
@@ -409,7 +641,7 @@ async fn handle_signaling_socket(socket: WebSocket, state: AppState) {
                     Ok(SignalingMessage::Pong) => {}
                     Ok(SignalingMessage::State { .. }) => {}
                     Ok(SignalingMessage::Error { message }) => {
-                        warn!("Received error from client signaling: {message}");
+                        warn!(slot = slot_index, "Received error from client signaling: {message}");
                     }
                     Err(e) => {
                         warn!("Failed to parse signaling JSON: {e}");
@@ -420,7 +652,7 @@ async fn handle_signaling_socket(socket: WebSocket, state: AppState) {
                 // Axum handles WS ping/pong automatically
             }
             Message::Close(_) => {
-                info!("WebSocket signaling connection closed by client");
+                info!(slot = slot_index, "WebSocket signaling connection closed by client");
                 break;
             }
             _ => {}
@@ -428,5 +660,21 @@ async fn handle_signaling_socket(socket: WebSocket, state: AppState) {
     }
 
     send_task.abort();
-    debug!("Signaling loop terminated");
+
+    // Clean up peer connection slot on disconnect
+    {
+        let mut pc_lock = state.peer_connections.write().await;
+        pc_lock[slot_index as usize] = None;
+    }
+
+    if let Some(ref sid) = session_id {
+        let mut mp = state.multi_peer.write().await;
+        let _ = mp.free_session(sid);
+    }
+
+    if let Some(ref router) = state.input_router {
+        let _ = router.neutralize_slot(slot_index);
+    }
+
+    debug!(slot = slot_index, "Signaling loop terminated for Player Slot {}", slot_index + 1);
 }

@@ -76,6 +76,7 @@ async fn test_packet_handler_decoding_and_watchdog_feed() {
         stick_ry: -32000,
         trigger_l: 255,
         trigger_r: 128,
+        player_index: 0,
         reserved: 0,
     };
     let gp_header = Header::new(MessageType::GamepadFull, HeaderFlags::empty(), 2);

@@ -10,7 +10,7 @@ import { ProtocolBridge } from '../../transport/ProtocolBridge';
 import { AppSettings } from '../settings/useSettings';
 import { haptics } from '../../ui/haptics/hapticEngine';
 
-export type InputMode = 'gamepad' | 'trackpad' | 'keyboard' | 'media';
+export type InputMode = 'tv' | 'airmouse' | 'gamepad' | 'trackpad' | 'keyboard' | 'media';
 
 export interface ContextToastData {
   id: number;
@@ -34,6 +34,10 @@ export interface UseSmartContextProps {
  */
 export function targetModeToInputMode(targetMode: number): InputMode {
   switch (targetMode) {
+    case TargetMode.TV_REMOTE:
+      return 'tv';
+    case TargetMode.AIR_MOUSE:
+      return 'airmouse';
     case TargetMode.GAMEPAD:
       return 'gamepad';
     case TargetMode.TRACKPAD:
@@ -43,7 +47,7 @@ export function targetModeToInputMode(targetMode: number): InputMode {
     case TargetMode.MEDIA_REMOTE:
       return 'media';
     default:
-      return 'trackpad';
+      return 'tv';
   }
 }
 
@@ -52,6 +56,10 @@ export function targetModeToInputMode(targetMode: number): InputMode {
  */
 export function inputModeToTargetMode(mode: InputMode): number {
   switch (mode) {
+    case 'tv':
+      return TargetMode.TV_REMOTE;
+    case 'airmouse':
+      return TargetMode.AIR_MOUSE;
     case 'gamepad':
       return TargetMode.GAMEPAD;
     case 'trackpad':
@@ -68,6 +76,16 @@ export function inputModeToTargetMode(mode: InputMode): number {
  */
 function getModeDisplayMeta(mode: InputMode): { title: string; subtitle: string } {
   switch (mode) {
+    case 'tv':
+      return {
+        title: 'UNIVERSAL SMART TV REMOTE',
+        subtitle: 'Auto-switched for Smart TV, Channel & Navigation controls',
+      };
+    case 'airmouse':
+      return {
+        title: 'AIR MOUSE MAGIC POINTER',
+        subtitle: 'Gyroscope pointing enabled for Smart TV & Desktop',
+      };
     case 'gamepad':
       return {
         title: 'GAMEPAD MODE DETECTED',

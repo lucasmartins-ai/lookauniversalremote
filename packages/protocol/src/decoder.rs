@@ -23,6 +23,12 @@ pub enum Payload {
     Heartbeat(HeartbeatMessage),
     /// MSG_HAPTIC_EVENT (0x0A) — 4 bytes payload.
     HapticEvent(HapticEventMessage),
+    /// MSG_SLOT_ASSIGNMENT (0x0B) — 20 bytes payload.
+    SlotAssignment(SlotAssignmentMessage),
+    /// MSG_TV_COMMAND (0x0C) — 4 bytes payload.
+    TvCommand(TvCommandMessage),
+    /// MSG_TV_TEXT_INPUT (0x0D) — 32 bytes payload.
+    TvTextInput(TvTextInputMessage),
 }
 
 /// A fully parsed LookARemote packet containing a header and message payload.
@@ -87,6 +93,9 @@ pub fn decode_packet(bytes: &[u8]) -> Result<Packet, ProtocolError> {
         MessageType::ModeSwitch => Payload::ModeSwitch(ModeSwitchMessage::decode_payload(payload_bytes)?),
         MessageType::Heartbeat => Payload::Heartbeat(HeartbeatMessage::decode_payload(payload_bytes)?),
         MessageType::HapticEvent => Payload::HapticEvent(HapticEventMessage::decode_payload(payload_bytes)?),
+        MessageType::SlotAssignment => Payload::SlotAssignment(SlotAssignmentMessage::decode_payload(payload_bytes)?),
+        MessageType::TvCommand => Payload::TvCommand(TvCommandMessage::decode_payload(payload_bytes)?),
+        MessageType::TvTextInput => Payload::TvTextInput(TvTextInputMessage::decode_payload(payload_bytes)?),
         MessageType::GamepadDelta | MessageType::Ack => {
             return Err(ProtocolError::UnsupportedMessageType(header.msg_type));
         }

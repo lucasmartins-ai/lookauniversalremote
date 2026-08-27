@@ -32,6 +32,8 @@ export interface PairRequestPayload {
 
 export interface PairResponsePayload {
   status: string;
+  player_index?: number;
+  player_color?: string;
   session_id: string;
   host_pubkey: string;
   signaling_ws_url: string;

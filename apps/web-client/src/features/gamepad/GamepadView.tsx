@@ -10,6 +10,7 @@ import {
   MousePointer,
   Keyboard,
   Film,
+  Palette,
 } from 'lucide-react';
 import { ProtocolBridge } from '../../transport/ProtocolBridge';
 import { TelemetryData } from '../connection/ConnectionState';
@@ -28,12 +29,19 @@ import { ImuSensorPipeline } from '../../sensors/ImuSensorPipeline';
 import { BiasCalibrator } from '../../sensors/BiasCalibrator';
 import { GyroAimController } from '../../sensors/GyroAimController';
 import { MotionSampler } from '../../sensors/MotionSampler';
+import { LayoutStudioView } from '../studio/LayoutStudioView';
+import { LayoutStorageManager } from '../studio/layoutStorage';
+import { CustomLayout } from '../studio/types';
 
 export interface GamepadViewProps {
   bridge: ProtocolBridge;
   telemetry: TelemetryData;
   settings: AppSettings;
   activeMode?: 'gamepad' | 'trackpad' | 'keyboard' | 'media';
+  playerIndex?: number;
+  playerColor?: string;
+  batteryLevel?: number | null;
+  isCharging?: boolean | null;
   onSelectMode?: (mode: 'gamepad' | 'trackpad' | 'keyboard' | 'media') => void;
   onOpenSettings: () => void;
   onDisconnect: () => void;
@@ -44,6 +52,10 @@ export const GamepadView: React.FC<GamepadViewProps> = ({
   telemetry,
   settings,
   activeMode = 'gamepad',
+  playerIndex = 0,
+  playerColor,
+  batteryLevel,
+  isCharging,
   onSelectMode,
   onOpenSettings,
   onDisconnect,
@@ -51,6 +63,10 @@ export const GamepadView: React.FC<GamepadViewProps> = ({
   const gamepad = useGamepadState();
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isGyroAimActive, setIsGyroAimActive] = useState(false);
+  const [isStudioOpen, setIsStudioOpen] = useState(false);
+  const [activeLayout, setActiveLayout] = useState<CustomLayout>(() =>
+    LayoutStorageManager.getActiveLayout(),
+  );
 
   // Initialize persistent IMU pipeline, calibrator, and controller instances
   const pipeline = useMemo(() => new ImuSensorPipeline(), []);
@@ -299,11 +315,32 @@ export const GamepadView: React.FC<GamepadViewProps> = ({
             </button>
           )}
 
-          <LatencyHud telemetry={telemetry} defaultExpanded={settings.showTelemetryDetails} />
+          <LatencyHud
+            telemetry={telemetry}
+            defaultExpanded={settings.showTelemetryDetails}
+            playerIndex={playerIndex}
+            playerColor={playerColor}
+            batteryLevel={batteryLevel}
+            isCharging={isCharging}
+          />
         </div>
 
-        {/* Right: Fullscreen & Settings */}
+        {/* Right: Studio, Fullscreen & Settings */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              haptics.buttonClick();
+              setIsStudioOpen(true);
+            }}
+            aria-label="Custom Layout Studio"
+            style={{ padding: '6px', color: 'var(--color-neon-cyan)' }}
+            title="Custom Touch Layout Studio"
+          >
+            <Palette size={16} />
+          </Button>
+
           <Button
             variant="ghost"
             size="sm"
@@ -333,6 +370,16 @@ export const GamepadView: React.FC<GamepadViewProps> = ({
           </Button>
         </div>
       </div>
+
+      {/* Render Touch Layout Studio Modal */}
+      {isStudioOpen && (
+        <LayoutStudioView
+          onClose={() => {
+            setIsStudioOpen(false);
+            setActiveLayout(LayoutStorageManager.getActiveLayout());
+          }}
+        />
+      )}
 
       {/* Main Dual Grip Landscape Surface */}
       <div
@@ -427,7 +474,7 @@ export const GamepadView: React.FC<GamepadViewProps> = ({
               letterSpacing: '0.1em',
             }}
           >
-            {settings.gamepadSampleRate || 120}HZ SAMPLER • OLED PRO
+            {activeLayout.name.toUpperCase()} • {settings.gamepadSampleRate || 120}HZ SAMPLER
           </div>
         </div>
 

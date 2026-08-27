@@ -7,7 +7,10 @@ pub mod keyboard;
 pub mod media;
 pub mod mode_switch;
 pub mod motion;
+pub mod slot_assignment;
 pub mod touchpad;
+pub mod tv_command;
+pub mod tv_text;
 
 pub use gamepad::{
     buttons, GamepadFullMessage, GAMEPAD_FULL_PAYLOAD_SIZE, GAMEPAD_FULL_TOTAL_SIZE,
@@ -21,7 +24,17 @@ pub use mode_switch::{
     MODE_SWITCH_PAYLOAD_SIZE, MODE_SWITCH_TOTAL_SIZE,
 };
 pub use motion::{MotionMessage, MOTION_PAYLOAD_SIZE, MOTION_TOTAL_SIZE};
+pub use slot_assignment::{
+    player_colors, SlotAssignmentMessage, SLOT_ASSIGNMENT_PAYLOAD_SIZE, SLOT_ASSIGNMENT_TOTAL_SIZE,
+};
 pub use touchpad::{TouchpadMessage, TOUCHPAD_PAYLOAD_SIZE, TOUCHPAD_TOTAL_SIZE};
+pub use tv_command::{
+    commands as tv_commands, target_devices as tv_target_devices, TvCommandMessage,
+    TV_COMMAND_PAYLOAD_SIZE, TV_COMMAND_TOTAL_SIZE,
+};
+pub use tv_text::{
+    TvTextInputMessage, TV_TEXT_MAX_LEN, TV_TEXT_PAYLOAD_SIZE, TV_TEXT_TOTAL_SIZE,
+};
 
 /// Message type identifiers in the LookARemote Binary Protocol v1.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -47,6 +60,12 @@ pub enum MessageType {
     Ack = 0x09,
     /// Host-to-Client haptic rumble trigger (9 bytes total).
     HapticEvent = 0x0A,
+    /// Host-to-Client player slot assignment & telemetry (25 bytes total).
+    SlotAssignment = 0x0B,
+    /// Universal Smart TV Command Code (9 bytes total).
+    TvCommand = 0x0C,
+    /// Smart TV Text Input & Search string (37 bytes total).
+    TvTextInput = 0x0D,
 }
 
 impl MessageType {
@@ -64,6 +83,9 @@ impl MessageType {
             0x08 => Some(Self::Heartbeat),
             0x09 => Some(Self::Ack),
             0x0A => Some(Self::HapticEvent),
+            0x0B => Some(Self::SlotAssignment),
+            0x0C => Some(Self::TvCommand),
+            0x0D => Some(Self::TvTextInput),
             _ => None,
         }
     }
@@ -86,6 +108,9 @@ impl MessageType {
             Self::ModeSwitch => Some(MODE_SWITCH_PAYLOAD_SIZE),
             Self::Heartbeat => Some(HEARTBEAT_PAYLOAD_SIZE),
             Self::HapticEvent => Some(HAPTIC_PAYLOAD_SIZE),
+            Self::SlotAssignment => Some(SLOT_ASSIGNMENT_PAYLOAD_SIZE),
+            Self::TvCommand => Some(TV_COMMAND_PAYLOAD_SIZE),
+            Self::TvTextInput => Some(TV_TEXT_PAYLOAD_SIZE),
             Self::GamepadDelta | Self::Ack => None,
         }
     }
@@ -102,6 +127,9 @@ impl MessageType {
             Self::ModeSwitch => Some(MODE_SWITCH_TOTAL_SIZE),
             Self::Heartbeat => Some(HEARTBEAT_TOTAL_SIZE),
             Self::HapticEvent => Some(HAPTIC_TOTAL_SIZE),
+            Self::SlotAssignment => Some(SLOT_ASSIGNMENT_TOTAL_SIZE),
+            Self::TvCommand => Some(TV_COMMAND_TOTAL_SIZE),
+            Self::TvTextInput => Some(TV_TEXT_TOTAL_SIZE),
             Self::GamepadDelta | Self::Ack => None,
         }
     }

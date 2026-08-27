@@ -1,10 +1,15 @@
 //! WebRTC PeerConnection, ICE Candidate handling, and low-latency DataChannel setup.
 
+use crate::core::multi_peer::MultiPeerSessionManager;
+use crate::core::session::SessionState;
 use crate::input::events::InputEvent;
+use crate::input::router::InputRouter;
 use crate::input::watchdog::DeadManWatchdog;
-use crate::transport::packet_handler::handle_raw_packet;
+use crate::transport::packet_handler::handle_raw_slot_packet;
+use lookaremote_protocol::messages::SlotAssignmentMessage;
+use lookaremote_protocol::{encode_packet, Header, HeaderFlags, MessageType, Packet, Payload};
 use std::sync::Arc;
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc, RwLock};
 use tracing::{debug, info, warn};
 use webrtc::api::media_engine::MediaEngine;
 use webrtc::api::setting_engine::SettingEngine;
@@ -65,44 +70,101 @@ pub fn configure_data_channel(
     configure_data_channel_with_context(data_channel, watchdog, event_tx, None);
 }
 
-/// Attaches listeners to a DataChannel with context watcher auto-synchronization.
+/// Attaches listeners to a DataChannel with context watcher auto-synchronization for Player 1.
 pub fn configure_data_channel_with_context(
     data_channel: Arc<RTCDataChannel>,
     watchdog: Arc<DeadManWatchdog>,
     event_tx: Option<mpsc::Sender<InputEvent>>,
     context_watcher: Option<Arc<crate::context::ContextWatcher>>,
 ) {
+    configure_data_channel_for_slot(0, data_channel, watchdog, event_tx, context_watcher, None, None);
+}
+
+/// Attaches listeners to a DataChannel for a specific player slot (0..3) with slot assignment dispatch,
+/// multi-peer state transitions, and isolated input routing.
+pub fn configure_data_channel_for_slot(
+    slot: u8,
+    data_channel: Arc<RTCDataChannel>,
+    watchdog: Arc<DeadManWatchdog>,
+    event_tx: Option<mpsc::Sender<InputEvent>>,
+    context_watcher: Option<Arc<crate::context::ContextWatcher>>,
+    multi_peer: Option<Arc<RwLock<MultiPeerSessionManager>>>,
+    input_router: Option<Arc<InputRouter>>,
+) {
     let label = data_channel.label().to_string();
     let wd_for_open = Arc::clone(&watchdog);
     let dc_for_open = Arc::clone(&data_channel);
     let watcher_for_open = context_watcher.clone();
+    let mp_for_open = multi_peer.clone();
 
     data_channel.on_open(Box::new(move || {
-        info!("WebRTC DataChannel '{}' OPENED and ready for input", label);
+        info!(slot = slot, "WebRTC DataChannel '{}' OPENED for Player Slot {}", label, slot + 1);
         wd_for_open.arm();
+
+        if let Some(ref mp_lock) = mp_for_open {
+            if let Ok(mut mp) = mp_lock.try_write() {
+                mp.set_slot_state(slot, SessionState::Connected);
+            }
+        }
+
         if let Some(ref watcher) = watcher_for_open {
             watcher.set_data_channel(Some(Arc::clone(&dc_for_open)));
         }
+
+        // Transmit initial MSG_SLOT_ASSIGNMENT to client
+        let slot_msg = SlotAssignmentMessage::new(slot, "LookARemote Host");
+        let header = Header::new(MessageType::SlotAssignment, HeaderFlags::empty(), 1);
+        let packet = Packet::new(header, Payload::SlotAssignment(slot_msg));
+
+        if let Ok(encoded) = encode_packet(&packet) {
+            let bytes = bytes::Bytes::copy_from_slice(encoded.as_slice());
+            let dc_clone = Arc::clone(&dc_for_open);
+            tokio::spawn(async move {
+                if let Err(e) = dc_clone.send(&bytes).await {
+                    debug!("Failed to send SlotAssignment to client: {e}");
+                } else {
+                    info!(slot = slot, "Dispatched MSG_SLOT_ASSIGNMENT to remote peer");
+                }
+            });
+        }
+
         Box::pin(async {})
     }));
 
     let wd_for_close = Arc::clone(&watchdog);
     let watcher_for_close = context_watcher.clone();
+    let mp_for_close = multi_peer.clone();
+    let router_for_close = input_router.clone();
+
     data_channel.on_close(Box::new(move || {
-        warn!("WebRTC DataChannel CLOSED");
+        warn!(slot = slot, "WebRTC DataChannel CLOSED for Player Slot {}", slot + 1);
         wd_for_close.disarm();
+
+        if let Some(ref mp_lock) = mp_for_close {
+            if let Ok(mut mp) = mp_lock.try_write() {
+                mp.set_slot_state(slot, SessionState::Closed);
+            }
+        }
+
+        if let Some(ref router) = router_for_close {
+            let _ = router.neutralize_slot(slot);
+        }
+
         if let Some(ref watcher) = watcher_for_close {
             watcher.set_data_channel(None);
         }
+
         Box::pin(async {})
     }));
 
     let wd_for_msg = Arc::clone(&watchdog);
+    let mp_for_msg = multi_peer.clone();
+
     data_channel.on_message(Box::new(move |msg: DataChannelMessage| {
         if msg.is_string {
             debug!("Received unexpected text message on DataChannel");
         } else {
-            let _ = handle_raw_packet(&msg.data, &wd_for_msg, event_tx.as_ref());
+            let _ = handle_raw_slot_packet(slot, &msg.data, &wd_for_msg, event_tx.as_ref(), mp_for_msg.as_ref());
         }
         Box::pin(async {})
     }));
@@ -145,12 +207,27 @@ pub fn setup_incoming_data_channel_listener_with_context(
     event_tx: Option<mpsc::Sender<InputEvent>>,
     context_watcher: Option<Arc<crate::context::ContextWatcher>>,
 ) {
+    setup_incoming_data_channel_listener_for_slot(0, peer_connection, watchdog, event_tx, context_watcher, None, None);
+}
+
+/// Binds DataChannel listener on an RTCPeerConnection for a specific player slot.
+pub fn setup_incoming_data_channel_listener_for_slot(
+    slot: u8,
+    peer_connection: &Arc<RTCPeerConnection>,
+    watchdog: Arc<DeadManWatchdog>,
+    event_tx: Option<mpsc::Sender<InputEvent>>,
+    context_watcher: Option<Arc<crate::context::ContextWatcher>>,
+    multi_peer: Option<Arc<RwLock<MultiPeerSessionManager>>>,
+    input_router: Option<Arc<InputRouter>>,
+) {
     peer_connection.on_data_channel(Box::new(move |dc: Arc<RTCDataChannel>| {
-        info!("Received incoming remote DataChannel: '{}'", dc.label());
+        info!(slot = slot, "Received incoming remote DataChannel: '{}' for Player Slot {}", dc.label(), slot + 1);
         let wd = Arc::clone(&watchdog);
         let tx = event_tx.clone();
         let cw = context_watcher.clone();
-        configure_data_channel_with_context(dc, wd, tx, cw);
+        let mp = multi_peer.clone();
+        let ir = input_router.clone();
+        configure_data_channel_for_slot(slot, dc, wd, tx, cw, mp, ir);
         Box::pin(async {})
     }));
 }

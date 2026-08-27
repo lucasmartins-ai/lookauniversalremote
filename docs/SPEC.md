@@ -1,45 +1,57 @@
-# System Requirements Specification (SRS) — Universal Remote
+# System Requirements Specification (SRS) — LookARemote Universal Remote
 
 **Document ID:** SRS-2026-001  
-**Status:** Approved / Base Specification  
-**System Name:** Universal Remote (Project: LookARemote)  
-**Version:** 1.0.0  
+**Status:** Approved / Extended Specification  
+**System Name:** Universal Smart Remote (Project: LookARemote)  
+**Version:** 1.1.0  
 
 ---
 
 ## 1. Introduction
 
 ### 1.1 Purpose
-This specification defines the functional, non-functional, interface, security, and performance requirements for **Universal Remote (LookARemote)** — an ultra-low-latency, zero-install, local-first universal remote control ecosystem turning mobile browsers/PWAs into responsive, multi-modal input controllers (gamepad, gyro aiming, trackpad, mouse, keyboard, media remote) for desktop computers (Windows, Linux, macOS).
+This specification defines the functional, non-functional, interface, security, and performance requirements for **LookARemote** — an ultra-low-latency, zero-install, local-first universal remote control ecosystem.
+- **Primary Hero Platform:** **Smart TV & Streaming Devices** (Samsung Tizen, LG webOS, Android TV / Google TV / Fire TV, Roku, Sony Bravia, Apple TV) with full channel changing, direct TV text typing/search, volume/mute control, TV settings & 5-way D-Pad, streaming app shortcuts, 4 TV color buttons, and Gyroscope Air Mouse (Magic Remote pointer).
+- **Secondary Target Platforms:** **Gaming Consoles** (PlayStation, Xbox, Nintendo Switch, Steam Deck) and **Desktop Computers** (PC Windows, Linux, macOS) for gamepad, trackpad, keyboard, and media control.
 
 ### 1.2 Scope
 The scope encompasses:
-1. **Web Client (PWA):** Zero-install Progressive Web Application running on modern mobile browsers (iOS Safari, Android Chrome/Firefox) handling touch, physical gestures, hardware IMU sensors (gyroscope/accelerometer), adaptive sampling, deadzone/filter pipelines, and binary protocol serialization over WebRTC DataChannel.
-2. **Host Daemon (Rust):** Native, zero-cloud desktop background daemon hosting a local signaling server, mDNS beacon, ephemeral cryptographic pairing manager, WebRTC peer connection endpoint, zero-allocation protocol decoder, safety watchdog, dynamic application context engine, and cross-platform virtual HID driver abstraction.
-3. **Local Transport & Protocol:** Binary protocol v1 operating over WebRTC DataChannel (`ordered: false`, `maxRetransmits: 0` SCTP/DTLS/UDP) for input streams, with multiplexed reliable signaling for handshakes and capability negotiation.
-4. **Virtual Driver Subsystems:** Native OS driver layers (ViGEm/SendInput/Win32 raw on Windows; `/dev/uinput` and evdev on Linux; `CGEvent` and VirtualHID on macOS).
+1. **Web Client (PWA):** Zero-install Progressive Web Application running on modern mobile browsers (iOS Safari, Android Chrome/Firefox) featuring:
+   - Flagship **Smart TV Remote (`TvRemoteView`)**: Channel Rockers & 0-9 Numpad, Volume/Mute rocker with hold-to-repeat, 5-way circular D-Pad, Direct TV Text Input & Search box with voice typing, Streaming launchers (Netflix, YouTube, Prime, Disney, Spotify), and 4 color buttons.
+   - **Gyroscope Air Mouse (`AirMouseView`)**: Magic Remote style pointer casting a precision cursor across the screen via smartphone IMU motion sensors with center recalibration, trigger click, drag lock, and scroll slider.
+   - Multi-Device **Target Selector**: Fast 1-tap switching between Smart TV, PC/Mac, and Console.
+   - Secondary Gamepad, Trackpad, Virtual Keyboard, and Media decks.
+2. **Host Daemon & TV Gateway (Rust):** Zero-cloud daemon hosting local signaling, ephemeral X25519 pairing, WebRTC DataChannel streaming, safety watchdog, and multi-protocol Smart TV command dispatchers (Samsung Tizen WS, LG webOS SSAP, Android TV ADB/Keyevents, Roku ECP, Sony IRCC, and OS virtual drivers).
+3. **Local Transport & Protocol:** Binary protocol v1 operating over WebRTC DataChannel (`ordered: false`, `maxRetransmits: 0` SCTP/DTLS/UDP) for input streams, including `MSG_TV_COMMAND` (0x0C) and `MSG_TV_TEXT_INPUT` (0x0D).
+4. **Virtual Driver Subsystems:** Native OS driver layers (ViGEm/SendInput on Windows; `/dev/uinput` on Linux; `CGEvent` on macOS).
 
 ---
 
 ## 2. Overall Architectural Invariants & Principles
 
-1. **Deterministic Hot Path:** The real-time input path (Sensor Capture → Binary Serialization → WebRTC DataChannel → Protocol Decoder → Input Router → OS Driver) MUST be zero-allocation, lock-free or minimal-contention, and strictly isolated from heap churn, file I/O, database writes, HTTP calls, synchronous logging, and UI layout recalculations.
+1. **Deterministic Hot Path:** The real-time input path (Sensor Capture → Binary Serialization → WebRTC DataChannel → Protocol Decoder → Input Router → TV Gateway / OS Driver) MUST be zero-allocation, lock-free or minimal-contention, and strictly isolated from heap churn, file I/O, and UI layout recalculations.
 2. **Zero Cloud Dependency for Core Control:** All pairing, discovery, signaling, input transmission, watchdog monitoring, and driver dispatch MUST function entirely over the Local Area Network (LAN) without internet connectivity once PWA assets are cached.
 3. **Fail-Safe Watchdog Guarantee:** Loss of network connection, browser closure, phone sleep, or packet timeouts MUST deterministically trigger immediate release of all virtual pressed keys, buttons, and axes within a maximum threshold of 100ms.
-4. **Adaptive Sensor Transmission:** The mobile IMU pipeline must NEVER blindly blast high-rate redundant frames; it must employ noise filtering, deadzones, change detection, and adaptive rate switching (10 Hz idle to 120 Hz active).
+4. **Adaptive Sensor Transmission:** The mobile IMU pipeline must employ noise filtering, deadzones, change detection, and adaptive rate switching (10 Hz idle to 120 Hz active).
 5. **No Arbitrary Code/Command Execution:** The protocol explicitly rejects generic command-line execution or shell invocation. Only strongly typed, bounded, enumerated input events and mode transitions are accepted.
 
 ---
 
 ## 3. Functional Requirements (FR)
 
-### 3.1 Mobile Controller Modes & Inputs
-- **FR-01: Gamepad Emulation:** Dual analog sticks (normalized $[-1.0, 1.0]$ with deadzone), D-Pad, 4 action buttons (A/B/X/Y or cross/circle/square/triangle), shoulder bumpers (L1/R1), analog triggers (L2/R2, $0.0$ to $1.0$), and system buttons (Start, Select, Guide).
-- **FR-02: Gyroscope / IMU Aiming:** Real-time angular velocity (yaw, pitch, roll) and linear acceleration processed via low-pass filtering, kalman/complementary filter, deadzone thresholding, and precision quantization.
-- **FR-03: Touchpad & Pointer:** Absolute and relative 2D pointer coordinates, multi-touch gestures (1-finger left click/drag, 2-finger right click, 2-finger vertical/horizontal scroll, pinch-to-zoom).
-- **FR-04: Keyboard & Text Input:** Standard US/international keycodes, modifier tracking (Shift, Ctrl, Alt, Meta/Cmd), key-down/key-up discrete events, and raw character sequence commits.
-- **FR-05: Media Remote:** Standard consumer media keys (Play/Pause, Next Track, Previous Track, Stop, Volume Up/Down, Mute, Seek).
-- **FR-06: Custom Programmable Layouts:** Grid-based and modular button/macro surfaces mappable to combinations of keyboard hotkeys, mouse actions, or OS system commands configured in the host daemon.
+### 3.1 Primary Mobile TV Remote & Multi-Device Modes
+- **FR-01: Smart TV Remote Control:**
+  - Channel Up/Down rocker, Previous Channel (Recall), Electronic Program Guide (EPG/Guide), and Info button.
+  - Direct Channel Number Keypad (0-9, dot, dash, confirm).
+  - Volume Up/Down rocker, Audio Mute, and hold-to-repeat ramp.
+  - 5-Way Ergonomic D-Pad (Up, Down, Left, Right, OK / Select / Enter), Back/Return, and Exit.
+  - Power / Standby toggle and Source / HDMI input selection.
+  - 4 Traditional TV Color Buttons (Red, Green, Yellow, Blue).
+  - 1-Tap Streaming App Launchers (Netflix, YouTube, Prime Video, Disney+, Spotify, Web Browser).
+- **FR-02: Direct TV Text Input & Search:** Direct smartphone keyboard and voice-to-text input box streaming UTF-8 search queries to TV in a single low-latency packet.
+- **FR-03: Gyroscope Air Mouse (Magic Remote):** Smartphone IMU angular rate processing translating hand tilt and orientation into on-screen pointer movement, with center recalibrate, click trigger, drag lock, and scroll slider.
+- **FR-04: Gamepad Emulation (Console & PC):** Dual analog sticks with radial deadzones, D-Pad, 4 action buttons (A/B/X/Y), shoulder bumpers, analog triggers, and system buttons.
+- **FR-05: Desktop Trackpad & Keyboard:** Ballistic 2D relative pointer, multi-touch gestures (1-finger click/drag, 2-finger scroll, 2-finger right-click), full virtual keyboard with sticky modifiers.
 
 ### 3.2 Transport & Networking
 - **FR-07: Local WebRTC Transport:** Direct peer-to-peer data transport over LAN using WebRTC DataChannel (`ordered: false`, `maxRetransmits: 0`).

@@ -23,6 +23,7 @@ fn test_mock_driver_lifecycle() {
         stick_ry: -2000,
         trigger_l: 128,
         trigger_r: 255,
+        player_index: 0,
         reserved: 0,
     };
 
@@ -58,6 +59,7 @@ fn test_input_router_event_dispatch() {
         stick_ry: 0,
         trigger_l: 255,
         trigger_r: 0,
+        player_index: 0,
         reserved: 0,
     };
 
@@ -85,6 +87,7 @@ async fn test_watchdog_auto_neutralization_pipeline() {
         stick_ry: 0,
         trigger_l: 255,
         trigger_r: 255,
+        player_index: 0,
         reserved: 0,
     };
     router

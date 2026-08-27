@@ -8,6 +8,8 @@ import type {
   MediaActionValue,
   HapticMotorValue,
   TargetModeValue,
+  TvCommandValue,
+  TargetDeviceTypeValue,
 } from './constants.js';
 
 /**
@@ -64,6 +66,8 @@ export interface GamepadFullPayload {
   triggerL: number;
   /** Right analog trigger (0 to 255). */
   triggerR: number;
+  /** Player slot index (0 = P1, 1 = P2, 2 = P3, 3 = P4). */
+  playerIndex?: number;
   /** Reserved alignment field (0x0000). */
   reserved?: number;
 }
@@ -114,7 +118,7 @@ export interface MediaPayload {
  */
 export interface ModeSwitchPayload {
   type: 'mode_switch';
-  /** Target control mode (0: Gamepad, 1: Trackpad, 2: Keyboard, 3: MediaRemote). */
+  /** Target control mode (0: Gamepad, 1: Trackpad, 2: Keyboard, 3: MediaRemote, 4: TvRemote, 5: AirMouse). */
   targetMode: TargetModeValue;
   /** Mode switch flags (Bit 0: IsManualOverride, Bit 1: IsEnforcedByHost). */
   flags: number;
@@ -145,6 +149,43 @@ export interface HapticEventPayload {
 }
 
 /**
+ * MSG_SLOT_ASSIGNMENT (0x0B) — 20 bytes payload.
+ */
+export interface SlotAssignmentPayload {
+  type: 'slot_assignment';
+  /** Player slot index (0 = P1, 1 = P2, 2 = P3, 3 = P4). */
+  playerIndex: number;
+  /** Player theme color in RGB565 format (16-bit unsigned). */
+  playerColorRgb565: number;
+  /** Host/peer battery percentage (0..100, or 255 if unknown). */
+  batteryLevel: number;
+  /** Host name string (up to 16 ASCII/UTF-8 characters). */
+  hostName: string;
+}
+
+/**
+ * MSG_TV_COMMAND (0x0C) — 4 bytes payload.
+ */
+export interface TvCommandPayload {
+  type: 'tv_command';
+  /** Universal TV Command code. */
+  commandCode: TvCommandValue;
+  /** Target TV device type. */
+  targetDevice: TargetDeviceTypeValue;
+  /** Additional command flags / repeat state. */
+  flags?: number;
+}
+
+/**
+ * MSG_TV_TEXT_INPUT (0x0D) — 32 bytes payload.
+ */
+export interface TvTextInputPayload {
+  type: 'tv_text_input';
+  /** UTF-8 text string (up to 31 bytes). */
+  text: string;
+}
+
+/**
  * Union of all decoded payload types.
  */
 export type MessagePayload =
@@ -155,7 +196,10 @@ export type MessagePayload =
   | MediaPayload
   | ModeSwitchPayload
   | HeartbeatPayload
-  | HapticEventPayload;
+  | HapticEventPayload
+  | SlotAssignmentPayload
+  | TvCommandPayload
+  | TvTextInputPayload;
 
 /**
  * Complete decoded packet structure.

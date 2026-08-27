@@ -35,6 +35,7 @@ fn bench_all_codecs_encode(c: &mut Criterion) {
             stick_ry: -1000,
             trigger_l: 200,
             trigger_r: 50,
+            player_index: 0,
             reserved: 0,
         }),
     );

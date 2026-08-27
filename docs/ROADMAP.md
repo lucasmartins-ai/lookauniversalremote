@@ -109,17 +109,23 @@ Phase 9: CI/CD Matrix, Packaging (.tar.gz, .zip), Documentation & Release [COMPL
   - `apps/web-client/src/features/context/`: `useSmartContext.ts` hook, `ContextToast.tsx` neon OLED HUD banner with quick manual lock/dismiss, and `ContextSettingsTab.tsx` in settings modal.
   - Comprehensive Test Suite: 61 Vitest tests in `@lookaremote/web-client`, 23 Vitest tests in `@lookaremote/protocol-types`, and 34 Rust integration/unit tests (42 total across workspace).
 
-### Sprint 8: Cross-Platform Hardening, Performance Profiling & Release Packaging [COMPLETE]
-- **Goal:** Native macOS CoreGraphics and TCC Accessibility permissions, Windows Win32 SendInput driver fallback, Linux udev rules and systemd user service, full Criterion performance profiling benchmarks, PWA Workbox offline hardening and Rollup chunk splitting, GitHub Actions CI/CD matrix, local release packaging scripts, and complete documentation.
+### Sprint 9: Multi-Controller Party Mode, Desktop System Tray Companion & Custom Touch Studio [COMPLETE]
+- **Goal:** Support up to 4 concurrent smartphone controller peers (P1..P4) with dynamic slot allocation, player color identifiers, slot isolation, binary protocol extension `MSG_SLOT_ASSIGNMENT` (`0x0B`), driver virtualization, desktop System Tray Companion (`tray-item`) with status monitoring and local browser QR Code launcher (`/qr`), visual Custom Touch Layout Studio with magnetic grid snapping, custom macro and turbo auto-fire buttons, layout presets (Xbox, FPS Claw, Fighting Arcade), JSON import/export, and Battery Status API telemetry with multi-motor haptics.
 - **Deliverables:**
-  - `apps/host-daemon/src/drivers/macos_permissions.rs`: Apple TCC Accessibility permissions checker (`AXIsProcessTrusted`) with actionable console guidance.
-  - `apps/host-daemon/src/drivers/macos_driver.rs`: Native `MacOSMouseDriver` and `MacOSKeyboardDriver` utilizing `CoreGraphics` (`CGEventCreateMouseEvent`, `CGEventCreateKeyboardEvent`, `CGEventCreateScrollWheelEvent2`, `CGEventPost`).
-  - `apps/host-daemon/src/drivers/windows_driver.rs`: Native `WindowsMouseDriver` and `WindowsKeyboardDriver` utilizing Win32 `SendInput`.
-  - `scripts/setup-linux-udev.sh`: Automated udev configuration for non-root `/dev/uinput` device access on Linux.
-  - `scripts/lookaremote.service`: Systemd user service unit definition.
-  - `packages/protocol/benches/codec_bench.rs` & `apps/host-daemon/benches/host_pipeline_bench.rs`: Comprehensive Criterion benchmark suites testing zero-allocation throughput for all 8 opcodes ($<100\text{ns}$ latency) and host input processing pipeline ($<0.5\text{ms}$).
-  - `apps/web-client/vite.config.ts`: Workbox offline cache-first precaching and Rollup manual vendor chunk splitting (`vendor-react`, `vendor-icons`, `vendor-scanner`).
-  - `.github/workflows/ci.yml` & `.github/workflows/release.yml`: Automated GitHub Actions cross-platform CI matrix and release builder.
-  - `scripts/package-release.sh`: Automated release packager generating tarballs, zip archives, and SHA-256 checksums.
-  - `docs/INSTALL.md` & `README.md`: Complete user guides, architectural diagrams, badges, and platform matrix.
-  - Comprehensive Test Suite: 61 Vitest tests in `@lookaremote/web-client`, 23 Vitest tests in `@lookaremote/protocol-types`, 38 Rust integration/unit tests across the workspace, and 2 Criterion benchmark suites.
+  - `packages/protocol` & `packages/protocol-types`:
+    - `MSG_SLOT_ASSIGNMENT` opcode `0x0B` (25-byte frame, 20-byte payload: `slot_index: u8`, `player_color_rgb565: u16`, `battery_level: u8`, `host_name: [u8; 16]`).
+    - `MSG_GAMEPAD_FULL` (`0x02`) updated with `player_index: u8` (byte 12) without breaking 14-byte payload size.
+    - Zero-allocation Rust and TypeScript codecs with unit and golden vector test coverage.
+  - `apps/host-daemon`:
+    - `core/multi_peer.rs`: `MultiPeerSessionManager` managing fixed 4 player slots (`MAX_PEERS = 4`), session ID indexing, dynamic allocation/deallocation, and real-time battery & RTT telemetry tracking.
+    - `transport/signaling.rs` & `transport/webrtc.rs`: Multi-peer pairing endpoint (`POST /api/pair`) with slot capacity check (rejecting 5th peer with HTTP 409 Conflict), slot assignment dispatch on DataChannel open, and slot-isolated WebSockets (`GET /ws/signaling?session_id=...`).
+    - `transport/qr_page.rs`: Cyberpunk OLED HTML pairing page served at `GET /qr` rendering live SVG pairing QR code.
+    - `tray/companion.rs`: Desktop System Tray Companion with live status labels, QR Code launcher in browser, connected devices inspector, active mode overrides, config opener, and graceful daemon exit.
+    - `drivers/`: Multi-controller virtual driver routing in `InputRouter` with isolated neutralization per player slot.
+  - `apps/web-client`:
+    - `features/battery/useBatteryTelemetry.ts`: Battery Status API hook streaming battery percentage and charging state to host daemon every 30s.
+    - `features/haptics/HapticEngine.ts`: Expanded haptic engine with pulse width modulated rumble emulation and directional multi-motor feedback (`left` heavy / `right` light).
+    - `features/multiplayer/PlayerBadge.tsx` & `features/connection/LatencyHud.tsx`: Real-time player slot badge (`P1`..`P4`) with dynamic accent colors (`#00E5FF`, `#FF007F`, `#FFE600`, `#00FF66`) and battery percentage indicator.
+    - `features/studio/`: Custom Touch Layout Studio with live canvas, magnetic snap-to-grid (8px/16px/24px), draggable/resizable element controls, toolbox palette (Button, Stick, D-Pad, Trigger, Turbo Fire 5..30Hz, Macro Combos, Touchpad), built-in presets (Xbox, FPS Claw, 6-Button Arcade), properties inspector, and JSON import/export via `localStorage`.
+  - Comprehensive Test Suite: 69 Vitest tests in `@lookaremote/web-client`, 27 Vitest tests in `@lookaremote/protocol-types`, and 48 Rust integration/unit tests across the workspace passing with 100% success and 0 compilation warnings.
+

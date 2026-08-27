@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   QrCode,
   Sliders,
@@ -16,6 +16,8 @@ import { useWakeLock } from './useWakeLock';
 import { QrScannerView } from '../features/pairing/QrScannerView';
 import { ManualPairView } from '../features/pairing/ManualPairView';
 import { SettingsModal } from '../features/settings/SettingsModal';
+import { TvRemoteView } from '../features/tv/TvRemoteView';
+import { AirMouseView } from '../features/airmouse/AirMouseView';
 import { GamepadView } from '../features/gamepad/GamepadView';
 import { TrackpadView } from '../features/trackpad/TrackpadView';
 import { KeyboardView } from '../features/keyboard/KeyboardView';
@@ -25,6 +27,8 @@ import { Button } from '../ui/components/Button';
 import { Spinner } from '../ui/components/Spinner';
 import { haptics } from '../ui/haptics/hapticEngine';
 
+import { useBatteryTelemetry } from '../features/battery/useBatteryTelemetry';
+
 export const App: React.FC = () => {
   const { settings, updateSettings } = useSettings();
   const { stage: pairingStage, error: pairingError, pairWithRawUri, pairWithParams, reset: resetPairing } = usePairing();
@@ -32,7 +36,9 @@ export const App: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<'qr' | 'manual'>('qr');
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [activeInputMode, setActiveInputMode] = useState<InputMode>('gamepad');
+  const [activeInputMode, setActiveInputMode] = useState<InputMode>('tv');
+  const [playerIndex, setPlayerIndex] = useState<number>(0);
+  const [playerColor, setPlayerColor] = useState<string>('#00E5FF');
 
   const {
     selectMode,
@@ -51,10 +57,32 @@ export const App: React.FC = () => {
   // Activate Screen Wake Lock during active connection
   useWakeLock(settings.wakeLockEnabled && connectionState === 'connected');
 
+  // Battery Telemetry (auto-reports every 30s)
+  const batteryState = useBatteryTelemetry(bridge, playerIndex);
+
+  // Listen to Slot Assignment messages from host
+  useEffect(() => {
+    if (!bridge) return;
+    return bridge.onSlotAssignment((slot) => {
+      setPlayerIndex(slot.playerIndex);
+      const colors = ['#00E5FF', '#FF007F', '#FFE600', '#00FF66'];
+      const color = colors[slot.playerIndex % 4] || '#00E5FF';
+      setPlayerColor(color);
+      document.documentElement.style.setProperty('--player-accent', color);
+    });
+  }, [bridge]);
+
   // Handle successful pairing handshake -> connect WebRTC
   const handlePairingSuccess = useCallback(
     async (session: PairingSession) => {
       try {
+        if (session.handshakeResponse.player_index !== undefined) {
+          setPlayerIndex(session.handshakeResponse.player_index);
+        }
+        if (session.handshakeResponse.player_color) {
+          setPlayerColor(session.handshakeResponse.player_color);
+          document.documentElement.style.setProperty('--player-accent', session.handshakeResponse.player_color);
+        }
         await connectWebRtc(session);
       } catch (e) {
         console.error('WebRTC connect error after pairing:', e);
@@ -115,74 +143,77 @@ export const App: React.FC = () => {
       {/* Background Grid */}
       <div className="cyber-grid-bg" />
 
-      {/* Top Header Bar */}
-      <header
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '12px 16px',
-          borderBottom: '1px solid var(--color-border-subtle)',
-          backgroundColor: 'rgba(5, 8, 12, 0.9)',
-          backdropFilter: 'blur(10px)',
-          zIndex: 40,
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div
-            style={{
-              width: '28px',
-              height: '28px',
-              borderRadius: '6px',
-              backgroundColor: 'rgba(0, 229, 255, 0.15)',
-              border: '1px solid var(--color-neon-cyan)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 0 8px rgba(0, 229, 255, 0.3)',
-            }}
-          >
-            <Zap size={16} color="var(--color-neon-cyan)" />
-          </div>
-          <div>
-            <h1
+      {/* Top Header Bar - Only shown on connection / pairing screen */}
+      {connectionState !== 'connected' && (
+        <header
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '12px 16px',
+            borderBottom: '1px solid var(--color-border-subtle)',
+            backgroundColor: 'rgba(5, 8, 12, 0.9)',
+            backdropFilter: 'blur(10px)',
+            zIndex: 40,
+            flexShrink: 0,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div
               style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: '1.1rem',
-                fontWeight: 700,
-                letterSpacing: '0.08em',
-                color: '#ffffff',
-                lineHeight: 1,
+                width: '28px',
+                height: '28px',
+                borderRadius: '6px',
+                backgroundColor: 'rgba(0, 229, 255, 0.15)',
+                border: '1px solid var(--color-neon-cyan)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 0 8px rgba(0, 229, 255, 0.3)',
               }}
             >
-              LOOKA<span style={{ color: 'var(--color-neon-cyan)' }}>REMOTE</span>
-            </h1>
-            <span
-              style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: '0.65rem',
-                color: 'var(--color-text-muted)',
-                letterSpacing: '0.05em',
-              }}
-            >
-              CORE v0.1 • 120HZ
-            </span>
+              <Zap size={16} color="var(--color-neon-cyan)" />
+            </div>
+            <div>
+              <h1
+                style={{
+                  fontFamily: 'var(--font-display)',
+                  fontSize: '1.1rem',
+                  fontWeight: 700,
+                  letterSpacing: '0.08em',
+                  color: '#ffffff',
+                  lineHeight: 1,
+                }}
+              >
+                LOOKA<span style={{ color: 'var(--color-neon-cyan)' }}>REMOTE</span>
+              </h1>
+              <span
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '0.65rem',
+                  color: 'var(--color-text-muted)',
+                  letterSpacing: '0.05em',
+                }}
+              >
+                UNIVERSAL REMOTE • 120HZ
+              </span>
+            </div>
           </div>
-        </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <StatusBadge status={statusVariant} />
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setSettingsOpen(true)}
-            aria-label="Settings"
-            style={{ padding: '6px', borderRadius: '50%' }}
-          >
-            <Settings size={18} color="var(--color-text-secondary)" />
-          </Button>
-        </div>
-      </header>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <StatusBadge status={statusVariant} />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSettingsOpen(true)}
+              aria-label="Settings"
+              style={{ padding: '6px', borderRadius: '50%' }}
+            >
+              <Settings size={18} color="var(--color-text-secondary)" />
+            </Button>
+          </div>
+        </header>
+      )}
 
       {/* Main Screen Body */}
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
@@ -330,13 +361,37 @@ export const App: React.FC = () => {
               onToggleLock={toggleManualLock}
             />
 
-            {activeInputMode === 'gamepad' ? (
-              <GamepadView
+            {activeInputMode === 'tv' ? (
+              <TvRemoteView
                 bridge={bridge}
                 telemetry={telemetry}
                 settings={settings}
                 activeMode={activeInputMode}
-                onSelectMode={selectMode}
+                onSelectMode={(m) => selectMode(m as InputMode)}
+                onOpenSettings={() => setSettingsOpen(true)}
+                onDisconnect={handleDisconnect}
+              />
+            ) : activeInputMode === 'airmouse' ? (
+              <AirMouseView
+                bridge={bridge}
+                telemetry={telemetry}
+                settings={settings}
+                activeMode={activeInputMode}
+                onSelectMode={(m) => selectMode(m as InputMode)}
+                onOpenSettings={() => setSettingsOpen(true)}
+                onDisconnect={handleDisconnect}
+              />
+            ) : activeInputMode === 'gamepad' ? (
+              <GamepadView
+                bridge={bridge}
+                telemetry={telemetry}
+                settings={settings}
+                activeMode={activeInputMode as any}
+                playerIndex={playerIndex}
+                playerColor={playerColor}
+                batteryLevel={batteryState.batteryLevel}
+                isCharging={batteryState.isCharging}
+                onSelectMode={(m) => selectMode(m as InputMode)}
                 onOpenSettings={() => setSettingsOpen(true)}
                 onDisconnect={handleDisconnect}
               />
@@ -345,8 +400,8 @@ export const App: React.FC = () => {
                 bridge={bridge}
                 telemetry={telemetry}
                 settings={settings}
-                activeMode={activeInputMode}
-                onSelectMode={selectMode}
+                activeMode={activeInputMode as any}
+                onSelectMode={(m) => selectMode(m as InputMode)}
                 onOpenSettings={() => setSettingsOpen(true)}
                 onDisconnect={handleDisconnect}
               />
@@ -355,8 +410,8 @@ export const App: React.FC = () => {
                 bridge={bridge}
                 telemetry={telemetry}
                 settings={settings}
-                activeMode={activeInputMode}
-                onSelectMode={selectMode}
+                activeMode={activeInputMode as any}
+                onSelectMode={(m) => selectMode(m as InputMode)}
                 onOpenSettings={() => setSettingsOpen(true)}
                 onDisconnect={handleDisconnect}
               />
@@ -365,8 +420,8 @@ export const App: React.FC = () => {
                 bridge={bridge}
                 telemetry={telemetry}
                 settings={settings}
-                activeMode={activeInputMode}
-                onSelectMode={selectMode}
+                activeMode={activeInputMode as any}
+                onSelectMode={(m) => selectMode(m as InputMode)}
                 onOpenSettings={() => setSettingsOpen(true)}
                 onDisconnect={handleDisconnect}
               />
@@ -383,8 +438,8 @@ export const App: React.FC = () => {
         onUpdateSettings={updateSettings}
         onDisconnect={connectionState === 'connected' ? handleDisconnect : undefined}
         isConnected={connectionState === 'connected'}
-        activeMode={activeInputMode}
-        onSelectMode={selectMode}
+        activeMode={activeInputMode as any}
+        onSelectMode={(m) => selectMode(m as InputMode)}
       />
     </div>
   );

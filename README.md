@@ -7,7 +7,7 @@
 [![PWA Ready](https://img.shields.io/badge/PWA-Offline%20Ready-green.svg)](https://vite-pwa-org.netlify.app/)
 [![Latency](https://img.shields.io/badge/Latency-Sub--Millisecond-brightgreen.svg)]()
 
-> **Transforme qualquer smartphone (iOS / Android) em um controle universal de altíssima precisão e latência ultrabaixa para seu computador (macOS, Windows e Linux).**
+> **Transforme qualquer smartphone (iOS / Android) no controle remoto universal definitivo para sua Televisão (Smart TV Samsung, LG, Android/Google TV, Roku, Sony, Apple TV), Consoles de Videogame e Computador (PC / Mac).**
 
 O **LookARemote** utiliza comunicação direta ponto a ponto via **WebRTC DataChannels binários (UDP)** e criptografia ponta a ponta (**X25519 + HMAC-SHA256**), garantindo tempos de resposta instantâneos sem depender de servidores em nuvem ou conexões externas.
 
@@ -17,46 +17,45 @@ O **LookARemote** utiliza comunicação direta ponto a ponto via **WebRTC DataCh
 
 ```
  ┌─────────────────────────────────────────────────────────────────────────────┐
- │                           LOOKA UNIVERSAL REMOTE                            │
+ │                      LOOKA UNIVERSAL SMART REMOTE                           │
  ├─────────────────┬──────────────────┬─────────────────┬──────────────────────┤
- │   🎮 GAMEPAD    │   🖱️ TOUCHPAD    │  🎯 GYRO AIM    │   🧠 SMART CONTEXT   │
- │ Dual Sticks     │ Cursor Balístico │ Fusão 6-DoF     │ Detecção automática  │
- │ Gatilhos L2/R2  │ Gestos 2 Dedos   │ Calibração Auto │ de janelas e troca   │
- │ Haptic Feedback │ Scroll & Drag    │ Deadzone Curvo  │ dinâmica de perfil   │
+ │   📺 SMART TV   │   🎯 AIR MOUSE   │   🎮 GAMEPAD    │   💻 PC & MAC DECK   │
+ │ Mudar Canais/EPG│ Magic Pointer    │ Dual Sticks     │ Touchpad Balístico   │
+ │ Digitar & Buscar│ Giroscópio 120Hz │ Gatilhos L2/R2  │ Teclado & Macros     │
+ │ Volume & Mute   │ Click & DragLock │ Haptic Feedback │ Mídia & Smart Context│
  └─────────────────┴──────────────────┴─────────────────┴──────────────────────┘
 ```
 
-### 1. 🎮 Modo Gamepad (Controle de Jogos)
+### 1. 📺 Modo Smart TV Universal (Foco Principal)
+- **Mudar de Canal**: Rocker ergonômico de canais (`CH+` / `CH-`), botão de retorno ao canal anterior (`Recall`), Guia de Programação (`EPG/Guide`) e `Info`.
+- **Teclado Numérico Direto**: Gaveta retrátil com teclado `0–9`, ponto/hífen e confirmação rápida.
+- **Digitação Rápida & Busca**: Barra de texto inteligente no topo que permite digitar pesquisas e URLs direto do teclado nativo ou ditado por voz do celular, enviando a string em um único pacote binário.
+- **Volume & Áudio**: Rocker tátil de Volume (`VOL+` / `VOL-`) com aceleração contínua ao segurar e botão de Mudo (`MUTE`).
+- **Navegação & Configurações**: D-Pad circular de 5 direções com botão central `OK/Enter`, botões `Power`, `Home`, `Menu/Settings`, `Source/HDMI`, `Voltar` e `Sair`.
+- **Atalhos de Streaming & 4 Cores**: Acesso com 1 toque a Netflix, YouTube, Prime Video, Disney+, Spotify e Navegador, além dos 4 botões coloridos tradicionais (Vermelho, Verde, Amarelo, Azul).
+
+### 2. 🎯 Modo Air Mouse / Magic Remote (Giroscópio)
+- **Apontador por Giroscópio 120 Hz**: Use seu smartphone como um *Magic Pointer* de Smart TV para mover o cursor na tela com movimentos naturais do pulso.
+- **Botão de Recalibração Central**: Reposiciona o cursor no centro da tela instantaneamente com um toque.
+- **Gatilho de Clique, Trava de Arrasto & Scroll**: Botões dedicados para clique primário, secundário/voltar, trava de arrasto (drag lock) e controle deslizante de scroll.
+
+### 3. 🎮 Modo Gamepad (Consoles & PC Gaming)
 - **Dois Joysticks Analógicos**: Controle com retorno ao centro elástico e zonas mortas configuráveis.
-- **Gatilhos Progressivos**: Sensores de pressão analógicos para aceleração/frenagem suave em jogos de corrida.
-- **D-Pad e Botões de Ação**: Layout tátil com feedback háptico por vibração (Haptic Rumble) acionado pelo Host.
-- **Emulação Nativa de Controle**: Compatível com jogos da Steam, emuladores e jogos de PC.
+- **Gatilhos Progressivos**: Sensores de pressão analógicos para aceleração/frenagem suave em jogos.
+- **D-Pad e Botões de Ação**: Layout tátil com feedback háptico por vibração (Haptic Rumble).
+- **Emulação Nativa**: Compatível com jogos da Steam, emuladores e consoles.
 
-### 2. 🖱️ Modo Touchpad & Gestos (Mouse Balístico)
+### 4. 🖱️ Modo Touchpad & Gestos (PC & Mac)
 - **Algoritmo de Aceleração Balística**: Movimentação fluida e precisa do cursor com inércia configurável.
-- **Gestos Multitoque**:
-  - Toque com 1 dedo: Clique esquerdo.
-  - Toque com 2 dedos: Clique direito.
-  - Deslizar 2 dedos: Scroll vertical/horizontal suave.
-  - Pressionar e segurar: Arrasto e seleção (Drag & Drop).
+- **Gestos Multitoque**: Toque com 1 dedo (clique esquerdo), toque com 2 dedos (clique direito), scroll suave de 2 dedos.
 
-### 3. 🎯 Modo Giroscópio & Mira IMU (Motion Aiming)
-- **Fusão de Sensores 6-DoF**: Integra dados brutos do acelerômetro e giroscópio a 60–120 Hz.
-- **Autocalibração de Bias**: Compensa automaticamente a deriva térmica e desvios estáticos do sensor.
-- **Mira Híbrida de Precisão**: Ative a mira por movimento ao segurar um botão (estilo Nintendo Switch / Steam Deck / DualSense).
-
-### 4. ⌨️ Modo Teclado & Produtividade
+### 5. ⌨️ Modo Teclado & Produtividade
 - Digitação remota em tempo real com envio de caracteres e teclas modificadoras (Shift, Ctrl, Alt, Command/Windows).
 - Mapeamento universal de códigos **USB HID** convertidos diretamente para os drivers nativos do sistema.
 
-### 5. 🎵 Modo Mídia Remota
-- Painel dedicado para controle de entretenimento: Play/Pause, Próxima/Anterior, Volume +/- e Mute.
-
-### 6. 🧠 Smart Context Engine (Detecção Inteligente)
-- O Host Daemon monitora em tempo real a janela ativa no computador:
-  - Abriu a **Steam** ou um jogo? 👉 O celular alterna **automaticamente** para o modo **Gamepad**.
-  - Abriu o **Spotify** ou reprodutor de mídia? 👉 Alterna para o **Controle de Mídia**.
-  - Voltou para o **Navegador** ou Desktop? 👉 Retorna para o **Touchpad**.
+### 6. 🧠 Smart Context Engine & Seletor de Alvo
+- Seletor rápido no topo para alternar entre **Smart TV (Samsung, LG, Android TV, Roku)**, **PC / Mac** e **Console**.
+- Detecção automática de aplicativos em execução no computador para ajuste dinâmico de layout.
 
 ---
 

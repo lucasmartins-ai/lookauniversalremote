@@ -55,6 +55,10 @@ pub struct CliArgs {
     #[arg(long, default_value = DEFAULT_PWA_ORIGIN)]
     pub allowed_origin: String,
 
+    /// Disable desktop system tray companion icon
+    #[arg(long, default_value_t = false)]
+    pub no_tray: bool,
+
     /// Path to config.toml application profile definitions
     #[arg(short, long)]
     pub config_file: Option<String>,
@@ -73,6 +77,8 @@ pub struct DaemonConfig {
     pub debug: bool,
     /// Disable terminal QR code rendering
     pub no_qr: bool,
+    /// Disable desktop system tray companion icon
+    pub no_tray: bool,
     /// Watchdog dead-man switch timeout in milliseconds
     pub watchdog_timeout_ms: u64,
     /// Watchdog evaluation loop interval in milliseconds
@@ -93,6 +99,7 @@ impl Default for DaemonConfig {
             allow_wan: false,
             debug: false,
             no_qr: false,
+            no_tray: false,
             watchdog_timeout_ms: DEFAULT_WATCHDOG_TIMEOUT_MS,
             watchdog_check_interval_ms: DEFAULT_WATCHDOG_CHECK_INTERVAL_MS,
             nonce_ttl_secs: DEFAULT_NONCE_TTL_SECS,
@@ -110,6 +117,7 @@ impl From<CliArgs> for DaemonConfig {
             allow_wan: args.allow_wan,
             debug: args.debug,
             no_qr: args.no_qr,
+            no_tray: args.no_tray,
             watchdog_timeout_ms: args.watchdog_timeout_ms,
             watchdog_check_interval_ms: DEFAULT_WATCHDOG_CHECK_INTERVAL_MS,
             nonce_ttl_secs: DEFAULT_NONCE_TTL_SECS,

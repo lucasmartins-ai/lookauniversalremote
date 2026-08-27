@@ -25,6 +25,12 @@ pub enum InputEvent {
     Heartbeat(HeartbeatMessage),
     /// Haptic feedback trigger event
     HapticEvent(HapticEventMessage),
+    /// Host-to-Client slot assignment event
+    SlotAssignment(lookaremote_protocol::messages::SlotAssignmentMessage),
+    /// Smart TV Command (0x0C)
+    TvCommand(lookaremote_protocol::messages::TvCommandMessage),
+    /// Smart TV Text Input (0x0D)
+    TvTextInput(lookaremote_protocol::messages::TvTextInputMessage),
     /// Emergency neutral reset command
     EmergencyReset,
 }
@@ -41,6 +47,9 @@ impl InputEvent {
             Payload::ModeSwitch(msg) => InputEvent::ModeSwitch(*msg),
             Payload::Heartbeat(msg) => InputEvent::Heartbeat(*msg),
             Payload::HapticEvent(msg) => InputEvent::HapticEvent(*msg),
+            Payload::SlotAssignment(msg) => InputEvent::SlotAssignment(*msg),
+            Payload::TvCommand(msg) => InputEvent::TvCommand(*msg),
+            Payload::TvTextInput(msg) => InputEvent::TvTextInput(*msg),
         }
     }
 

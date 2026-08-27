@@ -16,6 +16,8 @@ import { ITransport } from '../transport/ITransport';
 describe('Smart Context Engine (PWA Client & Protocol Integration)', () => {
   describe('Mode conversions', () => {
     it('correctly maps TargetMode protocol numbers to client mode strings', () => {
+      expect(targetModeToInputMode(TargetMode.TV_REMOTE)).toBe('tv');
+      expect(targetModeToInputMode(TargetMode.AIR_MOUSE)).toBe('airmouse');
       expect(targetModeToInputMode(TargetMode.GAMEPAD)).toBe('gamepad');
       expect(targetModeToInputMode(TargetMode.TRACKPAD)).toBe('trackpad');
       expect(targetModeToInputMode(TargetMode.KEYBOARD)).toBe('keyboard');
@@ -23,6 +25,8 @@ describe('Smart Context Engine (PWA Client & Protocol Integration)', () => {
     });
 
     it('correctly maps client mode strings to TargetMode protocol numbers', () => {
+      expect(inputModeToTargetMode('tv')).toBe(TargetMode.TV_REMOTE);
+      expect(inputModeToTargetMode('airmouse')).toBe(TargetMode.AIR_MOUSE);
       expect(inputModeToTargetMode('gamepad')).toBe(TargetMode.GAMEPAD);
       expect(inputModeToTargetMode('trackpad')).toBe(TargetMode.TRACKPAD);
       expect(inputModeToTargetMode('keyboard')).toBe(TargetMode.KEYBOARD);

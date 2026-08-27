@@ -190,14 +190,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Arc::clone(&watchdog),
         Some(event_tx),
         Some(Arc::clone(&context_watcher)),
+        Some(Arc::clone(&input_router)),
     );
 
-    // 10. Build Axum Router
+    // 10. Start Desktop System Tray Companion (unless --no-tray is passed)
+    if !config.no_tray {
+        if let Err(e) = lookaremote_host_daemon::tray::TrayCompanion::spawn(app_state.clone()) {
+            warn!("Failed to initialize Desktop System Tray Companion: {e}");
+        }
+    }
+
+    // 11. Build Axum Router
     let router = create_signaling_router(app_state);
 
-    // 11. Start Axum TCP Listener
+    // 12. Start Axum TCP Listener
     let bind_socket = SocketAddr::new(host_ip, config.port);
     info!("Starting signaling server on http://{}", bind_socket);
+    info!("Local QR Code page available at http://{}:{}/qr", host_ip, config.port);
 
     let listener = tokio::net::TcpListener::bind(bind_socket).await?;
 

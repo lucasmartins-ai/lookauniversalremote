@@ -16,6 +16,8 @@ import {
   type MediaPayload,
   type ModeSwitchPayload,
   type HeartbeatPayload,
+  type SlotAssignmentPayload,
+  type HapticEventPayload,
   type Packet,
 } from '@lookaremote/protocol-types';
 import { ITransport } from './ITransport';
@@ -23,12 +25,14 @@ import { haptics } from '../ui/haptics/hapticEngine';
 
 export type PacketHandler = (packet: Packet) => void;
 export type RttCalculatedHandler = (rttMs: number, echoToken: number) => void;
+export type SlotAssignmentHandler = (slot: SlotAssignmentPayload) => void;
 
 export class ProtocolBridge {
   private readonly encoder: ProtocolEncoder;
   private readonly sequenceGen: SequenceGenerator;
   private readonly packetHandlers: Set<PacketHandler> = new Set();
   private readonly rttHandlers: Set<RttCalculatedHandler> = new Set();
+  private readonly slotHandlers: Set<SlotAssignmentHandler> = new Set();
   private unbindTransportData: (() => void) | null = null;
 
   constructor(private readonly transport: ITransport) {
@@ -122,6 +126,40 @@ export class ProtocolBridge {
   }
 
   /**
+   * Encodes and transmits MSG_SLOT_ASSIGNMENT (0x0B) / Battery Telemetry.
+   */
+  public sendSlotAssignment(payload: Omit<SlotAssignmentPayload, 'type'>, flags = 0): boolean {
+    const seq = this.sequenceGen.next();
+    const encoded = this.encoder.encodeSlotAssignment(seq, flags, payload);
+    return this.transport.send(encoded);
+  }
+
+  /**
+   * Encodes and transmits MSG_TV_COMMAND (0x0C).
+   */
+  public sendTvCommand(
+    payload: { commandCode: number; targetDevice?: number; flags?: number },
+    flags = 0
+  ): boolean {
+    const seq = this.sequenceGen.next();
+    const encoded = this.encoder.encodeTvCommand(seq, flags, {
+      commandCode: payload.commandCode,
+      targetDevice: payload.targetDevice ?? 0,
+      flags: payload.flags ?? 0,
+    });
+    return this.transport.send(encoded);
+  }
+
+  /**
+   * Encodes and transmits MSG_TV_TEXT_INPUT (0x0D).
+   */
+  public sendTvTextInput(text: string, flags = 0): boolean {
+    const seq = this.sequenceGen.next();
+    const encoded = this.encoder.encodeTvTextInput(seq, flags, { text });
+    return this.transport.send(encoded);
+  }
+
+  /**
    * Sends an Emergency Reset flag on a heartbeat or null payload.
    */
   public sendEmergencyReset(): boolean {
@@ -136,6 +174,11 @@ export class ProtocolBridge {
   public onRtt(handler: RttCalculatedHandler): () => void {
     this.rttHandlers.add(handler);
     return () => this.rttHandlers.delete(handler);
+  }
+
+  public onSlotAssignment(handler: SlotAssignmentHandler): () => void {
+    this.slotHandlers.add(handler);
+    return () => this.slotHandlers.delete(handler);
   }
 
   private handleIncomingData(data: ArrayBuffer): void {
@@ -159,9 +202,22 @@ export class ProtocolBridge {
 
       // Handle Host Haptic Event Trigger
       if (packet.header.type === MessageType.HAPTIC_EVENT) {
-        const haptic = packet.payload as any;
+        const haptic = packet.payload as HapticEventPayload;
         if (haptic.durationMs > 0) {
-          haptics.vibrate(haptic.durationMs);
+          const motorType = haptic.motorIndex === 1 ? 'left' : haptic.motorIndex === 2 ? 'right' : 'both';
+          haptics.motorFeedback(motorType, haptic.intensity, haptic.durationMs);
+        }
+      }
+
+      // Handle Slot Assignment / Player Index
+      if (packet.header.type === MessageType.SLOT_ASSIGNMENT) {
+        const slotPayload = packet.payload as SlotAssignmentPayload;
+        for (const handler of this.slotHandlers) {
+          try {
+            handler(slotPayload);
+          } catch (e) {
+            console.error('Error in Slot Assignment handler:', e);
+          }
         }
       }
 

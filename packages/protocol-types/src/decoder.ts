@@ -108,7 +108,8 @@ export function decodePacket(input: ArrayBuffer | ArrayBufferView): Packet {
         stickRy: view.getInt16(13, true),
         triggerL: view.getUint8(15),
         triggerR: view.getUint8(16),
-        reserved: view.getUint16(17, true),
+        playerIndex: view.getUint8(17),
+        reserved: view.getUint8(18),
       };
       break;
     }
@@ -198,6 +199,59 @@ export function decodePacket(input: ArrayBuffer | ArrayBufferView): Packet {
         motorIndex: view.getUint8(5) as HapticMotorValue,
         intensity: view.getUint8(6),
         durationMs: view.getUint16(7, true),
+      };
+      break;
+    }
+
+    case MessageType.SLOT_ASSIGNMENT: {
+      if (view.byteLength !== MessageSize.SLOT_ASSIGNMENT.TOTAL) {
+        throw new ProtocolError(
+          `Invalid frame size for MSG_SLOT_ASSIGNMENT: expected ${MessageSize.SLOT_ASSIGNMENT.TOTAL} bytes, got ${view.byteLength}`
+        );
+      }
+      const rawBytes = new Uint8Array(view.buffer, view.byteOffset + 9, 16);
+      let nullIdx = rawBytes.indexOf(0);
+      if (nullIdx === -1) nullIdx = 16;
+      const hostName = new TextDecoder().decode(rawBytes.subarray(0, nullIdx));
+
+      payload = {
+        type: 'slot_assignment',
+        playerIndex: view.getUint8(5),
+        playerColorRgb565: view.getUint16(6, true),
+        batteryLevel: view.getUint8(8),
+        hostName,
+      };
+      break;
+    }
+
+    case MessageType.TV_COMMAND: {
+      if (view.byteLength !== MessageSize.TV_COMMAND.TOTAL) {
+        throw new ProtocolError(
+          `Invalid frame size for MSG_TV_COMMAND: expected ${MessageSize.TV_COMMAND.TOTAL} bytes, got ${view.byteLength}`
+        );
+      }
+      payload = {
+        type: 'tv_command',
+        commandCode: view.getUint16(5, true) as any,
+        targetDevice: view.getUint8(7) as any,
+        flags: view.getUint8(8),
+      };
+      break;
+    }
+
+    case MessageType.TV_TEXT_INPUT: {
+      if (view.byteLength !== MessageSize.TV_TEXT_INPUT.TOTAL) {
+        throw new ProtocolError(
+          `Invalid frame size for MSG_TV_TEXT_INPUT: expected ${MessageSize.TV_TEXT_INPUT.TOTAL} bytes, got ${view.byteLength}`
+        );
+      }
+      const len = Math.min(view.getUint8(5), 31);
+      const rawBytes = new Uint8Array(view.buffer, view.byteOffset + 6, len);
+      const text = new TextDecoder().decode(rawBytes);
+
+      payload = {
+        type: 'tv_text_input',
+        text,
       };
       break;
     }

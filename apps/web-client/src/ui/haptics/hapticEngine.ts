@@ -1,6 +1,6 @@
 /**
- * LookARemote Haptics Engine
- * Provides low-latency tactile feedback via the Web Vibration API.
+ * LookARemote Multi-Motor Haptics Engine
+ * Provides low-latency tactile feedback, custom vibration patterns, and host-triggered rumble effects.
  */
 
 export class HapticEngine {
@@ -42,6 +42,42 @@ export class HapticEngine {
     }
   }
 
+  /** Custom variable intensity rumble emulation via timed pulse modulation. */
+  public rumble(intensity: number, durationMs: number): void {
+    if (!this.enabled || !this.isSupported() || durationMs <= 0) return;
+    const clampedIntensity = Math.max(0, Math.min(255, intensity));
+    if (clampedIntensity === 0) return;
+
+    if (clampedIntensity >= 200 || durationMs < 50) {
+      this.vibrate(durationMs);
+    } else {
+      // Pulse width modulation for lower intensity
+      const pulseOn = Math.max(5, Math.round((clampedIntensity / 255) * 20));
+      const pulseOff = Math.max(5, 20 - pulseOn);
+      const pattern: number[] = [];
+      let elapsed = 0;
+      while (elapsed < durationMs) {
+        pattern.push(pulseOn);
+        pattern.push(pulseOff);
+        elapsed += pulseOn + pulseOff;
+      }
+      this.vibrate(pattern);
+    }
+  }
+
+  /** Directional / Motor-specific feedback handler (Left heavy / Right light). */
+  public motorFeedback(motor: 'left' | 'right' | 'both', intensity: number, durationMs: number): void {
+    if (motor === 'left') {
+      // Heavy / low frequency feel
+      this.rumble(Math.min(255, intensity * 1.2), durationMs);
+    } else if (motor === 'right') {
+      // High frequency light tap feel
+      this.rumble(Math.round(intensity * 0.7), Math.min(60, durationMs));
+    } else {
+      this.rumble(intensity, durationMs);
+    }
+  }
+
   /** Ultra-subtle feedback for virtual trackpad / smooth drag. */
   public lightTap(): void {
     this.vibrate(8);
@@ -52,7 +88,7 @@ export class HapticEngine {
     this.vibrate(16);
   }
 
-  /** Strong feedback for primary actions / toggles. */
+  /** Strong feedback for primary actions / toggles / turbo fires. */
   public heavyClick(): void {
     this.vibrate(30);
   }

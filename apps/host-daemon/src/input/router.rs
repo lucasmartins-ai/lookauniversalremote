@@ -10,22 +10,31 @@ use std::sync::{Arc, Mutex};
 use tracing::{trace, warn};
 
 /// High-performance thread-safe Input Router.
-/// Dispatches decoded incoming events to active OS virtual gamepad, mouse, and keyboard drivers.
+/// Dispatches decoded incoming events to active OS virtual gamepad (P1..P4), mouse, and keyboard drivers.
 #[derive(Clone)]
 pub struct InputRouter {
-    gamepad_driver: Arc<Mutex<Box<dyn VirtualGamepadDriver>>>,
+    gamepad_drivers: [Arc<Mutex<Box<dyn VirtualGamepadDriver>>>; 4],
     mouse_driver: Arc<Mutex<Box<dyn VirtualMouseDriver>>>,
     keyboard_driver: Arc<Mutex<Box<dyn VirtualKeyboardDriver>>>,
     motion_processor: Arc<Mutex<MotionProcessor>>,
-    latest_gamepad_state: Arc<Mutex<Option<GamepadFullMessage>>>,
+    tv_dispatcher: Arc<Mutex<crate::tv::TvDispatcher>>,
+    latest_gamepad_state: [Arc<Mutex<Option<GamepadFullMessage>>>; 4],
     last_touchpad_buttons: Arc<Mutex<u8>>,
 }
 
 impl InputRouter {
-    /// Creates a new InputRouter with the provided virtual gamepad driver and default platform mouse & keyboard drivers.
+    /// Creates a new InputRouter with the provided virtual gamepad driver for Player 1,
+    /// auto-creating platform drivers for Player 2..4, and default mouse & keyboard drivers.
     pub fn new(gamepad_driver: Box<dyn VirtualGamepadDriver>) -> Self {
-        Self::with_drivers(
+        let p2 = crate::drivers::create_platform_driver_for_slot(1);
+        let p3 = crate::drivers::create_platform_driver_for_slot(2);
+        let p4 = crate::drivers::create_platform_driver_for_slot(3);
+
+        Self::with_multi_gamepad_drivers(
             gamepad_driver,
+            p2,
+            p3,
+            p4,
             create_platform_mouse_driver(),
             create_platform_keyboard_driver(),
         )
@@ -36,7 +45,18 @@ impl InputRouter {
         gamepad_driver: Box<dyn VirtualGamepadDriver>,
         mouse_driver: Box<dyn VirtualMouseDriver>,
     ) -> Self {
-        Self::with_drivers(gamepad_driver, mouse_driver, create_platform_keyboard_driver())
+        let p2 = crate::drivers::create_platform_driver_for_slot(1);
+        let p3 = crate::drivers::create_platform_driver_for_slot(2);
+        let p4 = crate::drivers::create_platform_driver_for_slot(3);
+
+        Self::with_multi_gamepad_drivers(
+            gamepad_driver,
+            p2,
+            p3,
+            p4,
+            mouse_driver,
+            create_platform_keyboard_driver(),
+        )
     }
 
     /// Creates a new InputRouter with explicit gamepad, mouse, and keyboard drivers.
@@ -45,12 +65,48 @@ impl InputRouter {
         mouse_driver: Box<dyn VirtualMouseDriver>,
         keyboard_driver: Box<dyn VirtualKeyboardDriver>,
     ) -> Self {
-        Self::new_full(
+        let p2 = crate::drivers::create_platform_driver_for_slot(1);
+        let p3 = crate::drivers::create_platform_driver_for_slot(2);
+        let p4 = crate::drivers::create_platform_driver_for_slot(3);
+
+        Self::with_multi_gamepad_drivers(
             gamepad_driver,
+            p2,
+            p3,
+            p4,
             mouse_driver,
             keyboard_driver,
-            MotionProcessor::default(),
         )
+    }
+
+    /// Creates a new InputRouter with all 4 isolated player gamepad drivers explicitly provided.
+    pub fn with_multi_gamepad_drivers(
+        p1_gamepad: Box<dyn VirtualGamepadDriver>,
+        p2_gamepad: Box<dyn VirtualGamepadDriver>,
+        p3_gamepad: Box<dyn VirtualGamepadDriver>,
+        p4_gamepad: Box<dyn VirtualGamepadDriver>,
+        mouse_driver: Box<dyn VirtualMouseDriver>,
+        keyboard_driver: Box<dyn VirtualKeyboardDriver>,
+    ) -> Self {
+        Self {
+            gamepad_drivers: [
+                Arc::new(Mutex::new(p1_gamepad)),
+                Arc::new(Mutex::new(p2_gamepad)),
+                Arc::new(Mutex::new(p3_gamepad)),
+                Arc::new(Mutex::new(p4_gamepad)),
+            ],
+            mouse_driver: Arc::new(Mutex::new(mouse_driver)),
+            keyboard_driver: Arc::new(Mutex::new(keyboard_driver)),
+            motion_processor: Arc::new(Mutex::new(MotionProcessor::default())),
+            tv_dispatcher: Arc::new(Mutex::new(crate::tv::TvDispatcher::new())),
+            latest_gamepad_state: [
+                Arc::new(Mutex::new(None)),
+                Arc::new(Mutex::new(None)),
+                Arc::new(Mutex::new(None)),
+                Arc::new(Mutex::new(None)),
+            ],
+            last_touchpad_buttons: Arc::new(Mutex::new(0)),
+        }
     }
 
     /// Creates a fully customizable InputRouter with custom motion processor settings.
@@ -60,12 +116,27 @@ impl InputRouter {
         keyboard_driver: Box<dyn VirtualKeyboardDriver>,
         motion_processor: MotionProcessor,
     ) -> Self {
+        let p2 = crate::drivers::create_platform_driver_for_slot(1);
+        let p3 = crate::drivers::create_platform_driver_for_slot(2);
+        let p4 = crate::drivers::create_platform_driver_for_slot(3);
+
         Self {
-            gamepad_driver: Arc::new(Mutex::new(gamepad_driver)),
+            gamepad_drivers: [
+                Arc::new(Mutex::new(gamepad_driver)),
+                Arc::new(Mutex::new(p2)),
+                Arc::new(Mutex::new(p3)),
+                Arc::new(Mutex::new(p4)),
+            ],
             mouse_driver: Arc::new(Mutex::new(mouse_driver)),
             keyboard_driver: Arc::new(Mutex::new(keyboard_driver)),
             motion_processor: Arc::new(Mutex::new(motion_processor)),
-            latest_gamepad_state: Arc::new(Mutex::new(None)),
+            tv_dispatcher: Arc::new(Mutex::new(crate::tv::TvDispatcher::new())),
+            latest_gamepad_state: [
+                Arc::new(Mutex::new(None)),
+                Arc::new(Mutex::new(None)),
+                Arc::new(Mutex::new(None)),
+                Arc::new(Mutex::new(None)),
+            ],
             last_touchpad_buttons: Arc::new(Mutex::new(0)),
         }
     }
@@ -80,30 +151,43 @@ impl InputRouter {
         Ok(())
     }
 
-    /// Dispatches an InputEvent to the underlying virtual drivers.
+    /// Dispatches an InputEvent to the underlying virtual drivers using player_index from the event.
     pub fn route_event(&self, event: &InputEvent) -> Result<(), DriverError> {
+        let slot = match event {
+            InputEvent::GamepadFull(msg) => msg.player_index.min(3),
+            _ => 0,
+        };
+        self.route_slot_event(slot, event)
+    }
+
+    /// Dispatches an InputEvent specifically for a given player slot (0..3).
+    pub fn route_slot_event(&self, slot: u8, event: &InputEvent) -> Result<(), DriverError> {
+        let slot_idx = (slot as usize).min(3);
         match event {
             InputEvent::GamepadFull(msg) => {
+                let mut updated_msg = *msg;
+                updated_msg.player_index = slot;
+
                 trace!(
-                    buttons = msg.buttons,
-                    lx = msg.stick_lx,
-                    ly = msg.stick_ly,
-                    rx = msg.stick_rx,
-                    ry = msg.stick_ry,
-                    lt = msg.trigger_l,
-                    rt = msg.trigger_r,
-                    "Routing GamepadFull event to virtual driver"
+                    slot = slot,
+                    buttons = updated_msg.buttons,
+                    lx = updated_msg.stick_lx,
+                    ly = updated_msg.stick_ly,
+                    rx = updated_msg.stick_rx,
+                    ry = updated_msg.stick_ry,
+                    lt = updated_msg.trigger_l,
+                    rt = updated_msg.trigger_r,
+                    "Routing GamepadFull event to virtual driver for slot"
                 );
 
-                if let Ok(mut state) = self.latest_gamepad_state.lock() {
-                    *state = Some(*msg);
+                if let Ok(mut state) = self.latest_gamepad_state[slot_idx].lock() {
+                    *state = Some(updated_msg);
                 }
 
-                let mut driver = self
-                    .gamepad_driver
+                let mut driver = self.gamepad_drivers[slot_idx]
                     .lock()
                     .map_err(|_| DriverError::Internal("Failed to acquire gamepad driver lock".into()))?;
-                driver.update_gamepad(msg)?;
+                driver.update_gamepad(&updated_msg)?;
             }
 
             InputEvent::Motion(m) => {
@@ -133,7 +217,7 @@ impl InputRouter {
 
                     MotionAimMode::RightStickAdditive => {
                         let base_msg = {
-                            let state = self.latest_gamepad_state.lock().ok();
+                            let state = self.latest_gamepad_state[0].lock().ok();
                             state.and_then(|s| *s).unwrap_or_default()
                         };
 
@@ -144,8 +228,7 @@ impl InputRouter {
                         updated_msg.stick_rx = new_rx;
                         updated_msg.stick_ry = new_ry;
 
-                        let mut driver = self
-                            .gamepad_driver
+                        let mut driver = self.gamepad_drivers[0]
                             .lock()
                             .map_err(|_| DriverError::Internal("Failed to acquire gamepad driver lock".into()))?;
                         driver.update_gamepad(&updated_msg)?;
@@ -245,16 +328,86 @@ impl InputRouter {
             InputEvent::HapticEvent(_) => {
                 // Handled in host-to-client pipeline
             }
+
+            InputEvent::SlotAssignment(_) => {
+                // Handled in transport layer
+            }
+
+            InputEvent::TvCommand(cmd) => {
+                tracing::info!(
+                    command = cmd.command_code,
+                    target = cmd.target_device,
+                    "Routing TvCommand from smartphone peer"
+                );
+                if let Ok(dispatcher) = self.tv_dispatcher.lock() {
+                    let _ = dispatcher.dispatch_command(cmd);
+                }
+
+                // Map media/volume actions directly to host OS keyboard driver
+                if let Ok(mut keyboard) = self.keyboard_driver.lock() {
+                    match cmd.command_code {
+                        lookaremote_protocol::messages::tv_commands::VOLUME_UP => {
+                            let _ = keyboard.media_action(lookaremote_protocol::messages::media::actions::VOL_UP);
+                        }
+                        lookaremote_protocol::messages::tv_commands::VOLUME_DOWN => {
+                            let _ = keyboard.media_action(lookaremote_protocol::messages::media::actions::VOL_DOWN);
+                        }
+                        lookaremote_protocol::messages::tv_commands::MUTE => {
+                            let _ = keyboard.media_action(lookaremote_protocol::messages::media::actions::MUTE);
+                        }
+                        lookaremote_protocol::messages::tv_commands::MEDIA_PLAY_PAUSE => {
+                            let _ = keyboard.media_action(lookaremote_protocol::messages::media::actions::PLAY_PAUSE);
+                        }
+                        lookaremote_protocol::messages::tv_commands::MEDIA_STOP => {
+                            let _ = keyboard.media_action(lookaremote_protocol::messages::media::actions::STOP);
+                        }
+                        lookaremote_protocol::messages::tv_commands::MEDIA_FAST_FORWARD => {
+                            let _ = keyboard.media_action(lookaremote_protocol::messages::media::actions::NEXT);
+                        }
+                        lookaremote_protocol::messages::tv_commands::MEDIA_REWIND => {
+                            let _ = keyboard.media_action(lookaremote_protocol::messages::media::actions::PREV);
+                        }
+                        _ => {}
+                    }
+                }
+            }
+
+            InputEvent::TvTextInput(txt) => {
+                trace!(
+                    text = txt.as_str(),
+                    "Routing TvTextInput in InputRouter"
+                );
+                if let Ok(dispatcher) = self.tv_dispatcher.lock() {
+                    let _ = dispatcher.dispatch_text_input(txt);
+                }
+            }
         }
 
         Ok(())
     }
 
-    /// Neutralizes all inputs immediately (e.g. called by Dead-Man switch timeout or EmergencyReset).
-    pub fn neutralize(&self) -> Result<(), DriverError> {
-        // 1. Reset Gamepad Driver
-        if let Ok(mut driver) = self.gamepad_driver.lock() {
+    /// Access the TV dispatcher instance.
+    pub fn tv_dispatcher(&self) -> Arc<Mutex<crate::tv::TvDispatcher>> {
+        self.tv_dispatcher.clone()
+    }
+
+    /// Neutralizes inputs for a specific player slot without affecting other players.
+    pub fn neutralize_slot(&self, slot: u8) -> Result<(), DriverError> {
+        let slot_idx = (slot as usize).min(3);
+        if let Ok(mut driver) = self.gamepad_drivers[slot_idx].lock() {
             let _ = driver.neutralize();
+        }
+        if let Ok(mut state) = self.latest_gamepad_state[slot_idx].lock() {
+            *state = None;
+        }
+        Ok(())
+    }
+
+    /// Neutralizes all inputs across all 4 players, mouse, and keyboard immediately.
+    pub fn neutralize(&self) -> Result<(), DriverError> {
+        // 1. Reset all 4 Gamepad Drivers
+        for slot in 0..4 {
+            let _ = self.neutralize_slot(slot);
         }
 
         // 2. Reset Mouse Driver
@@ -272,13 +425,9 @@ impl InputRouter {
             proc.neutralize();
         }
 
-        // 5. Reset Touchpad buttons state & cached state
+        // 5. Reset Touchpad buttons state
         if let Ok(mut buttons) = self.last_touchpad_buttons.lock() {
             *buttons = 0;
-        }
-
-        if let Ok(mut state) = self.latest_gamepad_state.lock() {
-            *state = None;
         }
 
         Ok(())

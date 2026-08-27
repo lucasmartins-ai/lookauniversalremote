@@ -93,6 +93,26 @@ impl ContextWatcher {
         self.event_tx.subscribe()
     }
 
+    /// Sets or clears a manual mode override.
+    pub async fn set_manual_override(&self, mode: Option<TargetControlMode>) -> ArbitrationResult {
+        let mut arb = self.arbitrator.lock().await;
+        if let Some(target) = mode {
+            arb.set_manual_override(target, true);
+        } else {
+            arb.set_manual_override(TargetControlMode::Gamepad, false);
+        }
+        let current_window = self.detector.get_active_window().unwrap_or_default();
+        let matched = self.matcher.match_window(&current_window);
+        let result = arb.evaluate(matched, self.matcher.default_mode());
+
+        let event = ContextWatcherEvent {
+            active_window: current_window,
+            arbitration: result.clone(),
+        };
+        let _ = self.event_tx.send(event);
+        result
+    }
+
     /// Handles a mode switch request received from the client.
     pub async fn handle_client_mode_switch(&self, msg: &ModeSwitchMessage) -> ArbitrationResult {
         if let Some(target) = TargetControlMode::from_u8(msg.target_mode) {

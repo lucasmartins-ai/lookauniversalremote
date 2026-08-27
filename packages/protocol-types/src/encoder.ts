@@ -20,6 +20,7 @@ import type {
   MessagePayload,
   MotionPayload,
   Packet,
+  SlotAssignmentPayload,
   TouchpadPayload,
 } from './types.js';
 
@@ -75,7 +76,8 @@ export class ProtocolEncoder {
     this.view.setInt16(13, payload.stickRy, true);
     this.view.setUint8(15, payload.triggerL);
     this.view.setUint8(16, payload.triggerR);
-    this.view.setUint16(17, payload.reserved ?? 0, true);
+    this.view.setUint8(17, payload.playerIndex ?? 0);
+    this.view.setUint8(18, payload.reserved ?? 0);
 
     return this.u8View.subarray(0, MessageSize.GAMEPAD_FULL.TOTAL);
   }
@@ -182,6 +184,69 @@ export class ProtocolEncoder {
   }
 
   /**
+   * Encodes MSG_SLOT_ASSIGNMENT (0x0B, 25 bytes total).
+   */
+  public encodeSlotAssignment(
+    sequence: number,
+    flags: number,
+    payload: Omit<SlotAssignmentPayload, 'type'>
+  ): Uint8Array {
+    this.writeHeader(MessageType.SLOT_ASSIGNMENT, flags, sequence);
+
+    this.view.setUint8(5, payload.playerIndex);
+    this.view.setUint16(6, payload.playerColorRgb565, true);
+    this.view.setUint8(8, payload.batteryLevel);
+
+    // Write up to 16 bytes of hostName (null-padded)
+    const nameBytes = new TextEncoder().encode(payload.hostName || 'LookARemote Host');
+    for (let i = 0; i < 16; i++) {
+      const byte = i < nameBytes.length ? (nameBytes[i] ?? 0) : 0;
+      this.view.setUint8(9 + i, byte);
+    }
+
+    return this.u8View.subarray(0, MessageSize.SLOT_ASSIGNMENT.TOTAL);
+  }
+
+  /**
+   * Encodes MSG_TV_COMMAND (0x0C, 9 bytes total).
+   */
+  public encodeTvCommand(
+    sequence: number,
+    flags: number,
+    payload: { commandCode: number; targetDevice: number; flags?: number }
+  ): Uint8Array {
+    this.writeHeader(MessageType.TV_COMMAND, flags, sequence);
+
+    this.view.setUint16(5, payload.commandCode, true);
+    this.view.setUint8(7, payload.targetDevice);
+    this.view.setUint8(8, payload.flags ?? 0);
+
+    return this.u8View.subarray(0, MessageSize.TV_COMMAND.TOTAL);
+  }
+
+  /**
+   * Encodes MSG_TV_TEXT_INPUT (0x0D, 37 bytes total).
+   */
+  public encodeTvTextInput(
+    sequence: number,
+    flags: number,
+    payload: { text: string }
+  ): Uint8Array {
+    this.writeHeader(MessageType.TV_TEXT_INPUT, flags, sequence);
+
+    const textBytes = new TextEncoder().encode(payload.text || '');
+    const len = Math.min(textBytes.length, 31);
+    this.view.setUint8(5, len);
+
+    for (let i = 0; i < 31; i++) {
+      const byte = i < len ? (textBytes[i] ?? 0) : 0;
+      this.view.setUint8(6 + i, byte);
+    }
+
+    return this.u8View.subarray(0, MessageSize.TV_TEXT_INPUT.TOTAL);
+  }
+
+  /**
    * Encodes a generic Packet or Header+Payload.
    */
   public encode(packet: Packet): Uint8Array {
@@ -203,6 +268,12 @@ export class ProtocolEncoder {
         return this.encodeHeartbeat(header.sequence, header.flags, payload);
       case 'haptic':
         return this.encodeHapticEvent(header.sequence, header.flags, payload);
+      case 'slot_assignment':
+        return this.encodeSlotAssignment(header.sequence, header.flags, payload);
+      case 'tv_command':
+        return this.encodeTvCommand(header.sequence, header.flags, payload);
+      case 'tv_text_input':
+        return this.encodeTvTextInput(header.sequence, header.flags, payload);
     }
   }
 }

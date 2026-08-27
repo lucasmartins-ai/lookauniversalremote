@@ -19,6 +19,8 @@ function getModeIcon(mode: InputMode) {
       return <Keyboard size={20} color="var(--color-neon-yellow, #ffd600)" />;
     case 'media':
       return <Music size={20} color="var(--color-neon-magenta, #f50057)" />;
+    default:
+      return <Gamepad2 size={20} color="var(--color-neon-cyan)" />;
   }
 }
 
@@ -32,6 +34,8 @@ function getModeGlow(mode: InputMode): string {
       return 'rgba(255, 214, 0, 0.35)';
     case 'media':
       return 'rgba(245, 0, 87, 0.35)';
+    default:
+      return 'rgba(0, 229, 255, 0.35)';
   }
 }
 

@@ -137,19 +137,32 @@ export class WebRtcTransport implements ITransport {
   }
 
   public send(data: Uint8Array | ArrayBuffer): boolean {
-    if (!this.dataChannel || this.dataChannel.readyState !== 'open') {
-      return false;
+    if (this.dataChannel && this.dataChannel.readyState === 'open') {
+      try {
+        this.dataChannel.send(data as any);
+        this.stats.packetsSent++;
+        this.stats.bytesSent += data.byteLength;
+        this.notifyStats();
+        return true;
+      } catch (err) {
+        console.warn('Failed to send frame via DataChannel, trying WebSocket:', err);
+      }
     }
 
-    try {
-      this.dataChannel.send(data as any);
-      this.stats.packetsSent++;
-      this.stats.bytesSent += data.byteLength;
-      return true;
-    } catch (err) {
-      console.warn('Failed to send frame via DataChannel:', err);
-      return false;
+    if (this.signaling && this.signaling.isConnected()) {
+      try {
+        this.signaling.sendRaw(data);
+        this.stats.packetsSent++;
+        this.stats.bytesSent += data.byteLength;
+        this.notifyStats();
+        return true;
+      } catch (err) {
+        console.warn('Failed to send frame via WebSocket:', err);
+        return false;
+      }
     }
+
+    return false;
   }
 
   public disconnect(): void {

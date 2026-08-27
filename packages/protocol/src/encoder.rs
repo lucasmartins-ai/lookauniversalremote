@@ -5,8 +5,8 @@ use crate::decoder::{Packet, Payload};
 use crate::header::HEADER_SIZE;
 use crate::ProtocolError;
 
-/// Maximum possible packet size for Protocol v1 frames (currently MSG_MOTION = 21 bytes).
-pub const MAX_PACKET_SIZE: usize = 32;
+/// Maximum possible packet size for Protocol v1 frames (currently MSG_TV_TEXT_INPUT = 37 bytes).
+pub const MAX_PACKET_SIZE: usize = 48;
 
 /// Fixed-capacity stack-allocated buffer storing encoded frame bytes without heap allocation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -96,6 +96,9 @@ pub fn encode_packet_to_slice(packet: &Packet, dest: &mut [u8]) -> Result<usize,
         Payload::ModeSwitch(m) => m.write_payload_to_slice(payload_dest)?,
         Payload::Heartbeat(m) => m.write_payload_to_slice(payload_dest)?,
         Payload::HapticEvent(m) => m.write_payload_to_slice(payload_dest)?,
+        Payload::SlotAssignment(m) => m.write_payload_to_slice(payload_dest)?,
+        Payload::TvCommand(m) => m.write_payload_to_slice(payload_dest)?,
+        Payload::TvTextInput(m) => m.write_payload_to_slice(payload_dest)?,
     }
 
     Ok(total_size)

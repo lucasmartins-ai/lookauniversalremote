@@ -97,6 +97,12 @@ export class SignalingClient {
     }
   }
 
+  public sendRaw(data: Uint8Array | ArrayBuffer): void {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(data);
+    }
+  }
+
   public close(): void {
     this.isExplicitlyClosed = true;
     this.stopPingInterval();

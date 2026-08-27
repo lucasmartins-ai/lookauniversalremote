@@ -58,21 +58,27 @@ pub trait VirtualGamepadDriver: Send + Sync {
     fn neutralize(&mut self) -> Result<(), DriverError>;
 }
 
-/// Creates the recommended virtual gamepad driver for the current host operating system.
+/// Creates the recommended virtual gamepad driver for the current host operating system for Player 1.
+pub fn create_platform_driver() -> Box<dyn VirtualGamepadDriver> {
+    create_platform_driver_for_slot(0)
+}
+
+/// Creates the recommended virtual gamepad driver for the specified player slot (0..3).
 ///
 /// On Linux: attempts to initialize `/dev/uinput` virtual Xbox 360 controller.
 /// On Windows: attempts to connect to `ViGEmBus` driver.
-/// On macOS / Fallback: instantiates `MockGamepadDriver`.
-pub fn create_platform_driver() -> Box<dyn VirtualGamepadDriver> {
+/// On macOS / Fallback: instantiates `MockGamepadDriver::for_slot(slot)`.
+pub fn create_platform_driver_for_slot(slot: u8) -> Box<dyn VirtualGamepadDriver> {
     #[cfg(target_os = "linux")]
     {
         match UInputGamepadDriver::new() {
             Ok(driver) => {
-                info!("Using native Linux /dev/uinput virtual Xbox 360 driver");
+                info!(slot = slot, "Using native Linux /dev/uinput virtual Xbox 360 driver for Player {}", slot + 1);
                 return Box::new(driver);
             }
             Err(err) => {
                 warn!(
+                    slot = slot,
                     error = %err,
                     "Failed to initialize Linux /dev/uinput driver; falling back to MockGamepadDriver"
                 );
@@ -84,11 +90,12 @@ pub fn create_platform_driver() -> Box<dyn VirtualGamepadDriver> {
     {
         match ViGEmGamepadDriver::new() {
             Ok(driver) => {
-                info!("Using native Windows ViGEm virtual Xbox 360 driver");
+                info!(slot = slot, "Using native Windows ViGEm virtual Xbox 360 driver for Player {}", slot + 1);
                 return Box::new(driver);
             }
             Err(err) => {
                 warn!(
+                    slot = slot,
                     error = %err,
                     "Failed to initialize Windows ViGEm driver; falling back to MockGamepadDriver"
                 );
@@ -96,6 +103,6 @@ pub fn create_platform_driver() -> Box<dyn VirtualGamepadDriver> {
         }
     }
 
-    info!("Using MockGamepadDriver (development / test mode)");
-    Box::new(MockGamepadDriver::new())
+    info!(slot = slot, "Using MockGamepadDriver for Player Slot {} (development / test mode)", slot + 1);
+    Box::new(MockGamepadDriver::for_slot(slot))
 }

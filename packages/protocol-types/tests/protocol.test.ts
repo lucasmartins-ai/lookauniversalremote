@@ -257,10 +257,51 @@ describe('Protocol v1 Codec & Types', () => {
       expect(TargetMode.TRACKPAD).toBe(1);
       expect(TargetMode.KEYBOARD).toBe(2);
       expect(TargetMode.MEDIA_REMOTE).toBe(3);
+      expect(TargetMode.TV_REMOTE).toBe(4);
+      expect(TargetMode.AIR_MOUSE).toBe(5);
 
       expect(ModeSwitchFlags.NONE).toBe(0x00);
       expect(ModeSwitchFlags.IS_MANUAL_OVERRIDE).toBe(0x01);
       expect(ModeSwitchFlags.IS_ENFORCED_BY_HOST).toBe(0x02);
+    });
+
+    it('encodes and decodes MSG_TV_COMMAND correctly', () => {
+      const encoded = encoder.encodeTvCommand(888, 0, {
+        commandCode: 8, // CHANNEL_UP
+        targetDevice: 1, // SAMSUNG_TIZEN
+        flags: 0,
+      });
+
+      expect(encoded.byteLength).toBe(MessageSize.TV_COMMAND.TOTAL);
+      expect(encoded.byteLength).toBe(9);
+
+      const decoded = decoder.decode(encoded);
+      expect(decoded.header.type).toBe(MessageType.TV_COMMAND);
+      expect(decoded.header.sequence).toBe(888);
+      expect(decoded.payload.type).toBe('tv_command');
+
+      if (decoded.payload.type === 'tv_command') {
+        expect(decoded.payload.commandCode).toBe(8);
+        expect(decoded.payload.targetDevice).toBe(1);
+      }
+    });
+
+    it('encodes and decodes MSG_TV_TEXT_INPUT correctly', () => {
+      const encoded = encoder.encodeTvTextInput(999, 0, {
+        text: 'The Mandalorian',
+      });
+
+      expect(encoded.byteLength).toBe(MessageSize.TV_TEXT_INPUT.TOTAL);
+      expect(encoded.byteLength).toBe(37);
+
+      const decoded = decoder.decode(encoded);
+      expect(decoded.header.type).toBe(MessageType.TV_TEXT_INPUT);
+      expect(decoded.header.sequence).toBe(999);
+      expect(decoded.payload.type).toBe('tv_text_input');
+
+      if (decoded.payload.type === 'tv_text_input') {
+        expect(decoded.payload.text).toBe('The Mandalorian');
+      }
     });
 
     it('encodes and decodes MSG_MODE_SWITCH correctly', () => {
@@ -280,6 +321,53 @@ describe('Protocol v1 Codec & Types', () => {
       if (decoded.payload.type === 'mode_switch') {
         expect(decoded.payload.targetMode).toBe(TargetMode.KEYBOARD);
         expect(decoded.payload.flags).toBe(0x03);
+      }
+    });
+
+    it('encodes and decodes MSG_SLOT_ASSIGNMENT correctly', () => {
+      const encoded = encoder.encodeSlotAssignment(123, 0, {
+        playerIndex: 2,
+        playerColorRgb565: 0xFFE0, // P3 Yellow
+        batteryLevel: 92,
+        hostName: 'Test Host Mac',
+      });
+
+      expect(encoded.byteLength).toBe(MessageSize.SLOT_ASSIGNMENT.TOTAL);
+      expect(encoded.byteLength).toBe(25);
+
+      const decoded = decoder.decode(encoded);
+      expect(decoded.header.type).toBe(MessageType.SLOT_ASSIGNMENT);
+      expect(decoded.header.sequence).toBe(123);
+      expect(decoded.payload.type).toBe('slot_assignment');
+
+      if (decoded.payload.type === 'slot_assignment') {
+        expect(decoded.payload.playerIndex).toBe(2);
+        expect(decoded.payload.playerColorRgb565).toBe(0xFFE0);
+        expect(decoded.payload.batteryLevel).toBe(92);
+        expect(decoded.payload.hostName).toBe('Test Host Mac');
+      }
+    });
+
+    it('encodes and decodes GamepadFull with playerIndex correctly', () => {
+      const encoded = encoder.encodeGamepadFull(456, 0, {
+        buttons: GamepadButtonMask.BTN_SOUTH | GamepadButtonMask.BTN_EAST,
+        stickLx: 10000,
+        stickLy: -10000,
+        stickRx: 20000,
+        stickRy: -20000,
+        triggerL: 200,
+        triggerR: 250,
+        playerIndex: 1,
+      });
+
+      expect(encoded.byteLength).toBe(MessageSize.GAMEPAD_FULL.TOTAL);
+      const decoded = decoder.decode(encoded);
+      expect(decoded.header.type).toBe(MessageType.GAMEPAD_FULL);
+      if (decoded.payload.type === 'gamepad_full') {
+        expect(decoded.payload.playerIndex).toBe(1);
+        expect(decoded.payload.buttons).toBe(GamepadButtonMask.BTN_SOUTH | GamepadButtonMask.BTN_EAST);
+        expect(decoded.payload.triggerL).toBe(200);
+        expect(decoded.payload.triggerR).toBe(250);
       }
     });
   });

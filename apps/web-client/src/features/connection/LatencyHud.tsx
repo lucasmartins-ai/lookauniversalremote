@@ -1,18 +1,27 @@
 import React, { useState } from 'react';
 import { Activity, ShieldCheck, ChevronDown, ChevronUp } from 'lucide-react';
 import { TelemetryData } from './ConnectionState';
+import { PlayerBadge } from '../multiplayer/PlayerBadge';
 import { haptics } from '../../ui/haptics/hapticEngine';
 
 export interface LatencyHudProps {
   telemetry: TelemetryData;
   className?: string;
   defaultExpanded?: boolean;
+  playerIndex?: number;
+  playerColor?: string;
+  batteryLevel?: number | null;
+  isCharging?: boolean | null;
 }
 
 export const LatencyHud: React.FC<LatencyHudProps> = ({
   telemetry,
   className = '',
   defaultExpanded = false,
+  playerIndex,
+  playerColor,
+  batteryLevel,
+  isCharging,
 }) => {
   const [expanded, setExpanded] = useState(defaultExpanded);
 
@@ -70,6 +79,16 @@ export const LatencyHud: React.FC<LatencyHudProps> = ({
           gap: '12px',
         }}
       >
+        {/* Player Slot Badge */}
+        {playerIndex !== undefined && (
+          <PlayerBadge
+            playerIndex={playerIndex}
+            playerColor={playerColor}
+            batteryLevel={batteryLevel}
+            isCharging={isCharging}
+          />
+        )}
+
         {/* RTT Badge */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <Activity size={14} color={rttColor} />

@@ -65,7 +65,10 @@ fn test_golden_vectors_decode_and_encode_parity() {
                 assert_eq!(g.stick_ry, vec.payload["stick_ry"].as_i64().unwrap() as i16);
                 assert_eq!(g.trigger_l, vec.payload["trigger_l"].as_u64().unwrap() as u8);
                 assert_eq!(g.trigger_r, vec.payload["trigger_r"].as_u64().unwrap() as u8);
-                assert_eq!(g.reserved, vec.payload["reserved"].as_u64().unwrap() as u16);
+                if let Some(pi) = vec.payload.get("player_index") {
+                    assert_eq!(g.player_index, pi.as_u64().unwrap() as u8);
+                }
+                assert_eq!(g.reserved, (vec.payload["reserved"].as_u64().unwrap() & 0xFF) as u8);
             }
             ("touchpad", Payload::Touchpad(t)) => {
                 assert_eq!(t.dx, vec.payload["dx"].as_i64().unwrap() as i16);
@@ -292,4 +295,122 @@ fn test_mode_switch_codec() {
         panic!("Expected Payload::ModeSwitch");
     }
 }
+
+#[test]
+fn test_slot_assignment_codec() {
+    let msg = SlotAssignmentMessage::new(1, "Gaming Rig")
+        .with_battery(85);
+
+    assert_eq!(msg.player_index, 1);
+    assert_eq!(msg.player_color_rgb565, player_colors::P2_MAGENTA);
+    assert_eq!(msg.battery_level, 85);
+    assert_eq!(msg.host_name_str(), "Gaming Rig");
+
+    let header = lookaremote_protocol::Header::new(MessageType::SlotAssignment, HeaderFlags::empty(), 100);
+    let packet = lookaremote_protocol::Packet::new(header, Payload::SlotAssignment(msg));
+
+    let encoded = encode_packet(&packet).expect("Encoding slot assignment succeeds");
+    assert_eq!(encoded.len(), SLOT_ASSIGNMENT_TOTAL_SIZE);
+    assert_eq!(encoded.len(), 25);
+
+    let decoded = decode_packet(encoded.as_slice()).expect("Decoding slot assignment succeeds");
+    assert_eq!(decoded.header.sequence, 100);
+    assert_eq!(decoded.header.msg_type, MessageType::SlotAssignment);
+
+    if let Payload::SlotAssignment(decoded_msg) = decoded.payload {
+        assert_eq!(decoded_msg.player_index, 1);
+        assert_eq!(decoded_msg.player_color_rgb565, player_colors::P2_MAGENTA);
+        assert_eq!(decoded_msg.battery_level, 85);
+        assert_eq!(decoded_msg.host_name_str(), "Gaming Rig");
+    } else {
+        panic!("Expected Payload::SlotAssignment");
+    }
+}
+
+#[test]
+fn test_gamepad_player_index_codec() {
+    let msg = GamepadFullMessage {
+        buttons: gamepad::buttons::BTN_SOUTH,
+        stick_lx: 1000,
+        stick_ly: -2000,
+        stick_rx: 3000,
+        stick_ry: -4000,
+        trigger_l: 128,
+        trigger_r: 255,
+        player_index: 3,
+        reserved: 0,
+    };
+
+    let header = lookaremote_protocol::Header::new(MessageType::GamepadFull, HeaderFlags::empty(), 77);
+    let packet = lookaremote_protocol::Packet::new(header, Payload::GamepadFull(msg));
+
+    let encoded = encode_packet(&packet).expect("Encoding gamepad succeeds");
+    assert_eq!(encoded.len(), GAMEPAD_FULL_TOTAL_SIZE);
+    assert_eq!(encoded.len(), 19);
+
+    let decoded = decode_packet(encoded.as_slice()).expect("Decoding gamepad succeeds");
+    assert_eq!(decoded.header.sequence, 77);
+    if let Payload::GamepadFull(decoded_msg) = decoded.payload {
+        assert_eq!(decoded_msg.player_index, 3);
+        assert_eq!(decoded_msg.buttons, gamepad::buttons::BTN_SOUTH);
+        assert_eq!(decoded_msg.trigger_l, 128);
+        assert_eq!(decoded_msg.trigger_r, 255);
+    } else {
+        panic!("Expected Payload::GamepadFull");
+    }
+}
+
+#[test]
+fn test_tv_command_codec() {
+    let msg = TvCommandMessage {
+        command_code: tv_commands::CHANNEL_UP,
+        target_device: tv_target_devices::SAMSUNG_TIZEN,
+        flags: 0x01,
+    };
+
+    let header = lookaremote_protocol::Header::new(MessageType::TvCommand, HeaderFlags::empty(), 123);
+    let packet = lookaremote_protocol::Packet::new(header, Payload::TvCommand(msg));
+
+    let encoded = encode_packet(&packet).expect("Encoding TV command succeeds");
+    assert_eq!(encoded.len(), TV_COMMAND_TOTAL_SIZE);
+    assert_eq!(encoded.len(), 9);
+
+    let decoded = decode_packet(encoded.as_slice()).expect("Decoding TV command succeeds");
+    assert_eq!(decoded.header.sequence, 123);
+    assert_eq!(decoded.header.msg_type, MessageType::TvCommand);
+
+    if let Payload::TvCommand(decoded_msg) = decoded.payload {
+        assert_eq!(decoded_msg.command_code, tv_commands::CHANNEL_UP);
+        assert_eq!(decoded_msg.target_device, tv_target_devices::SAMSUNG_TIZEN);
+        assert_eq!(decoded_msg.flags, 0x01);
+    } else {
+        panic!("Expected Payload::TvCommand");
+    }
+}
+
+#[test]
+fn test_tv_text_input_codec() {
+    let msg = TvTextInputMessage::from_str_truncate("Stranger Things 4K");
+    assert_eq!(msg.as_str(), "Stranger Things 4K");
+    assert_eq!(msg.length, 18);
+
+    let header = lookaremote_protocol::Header::new(MessageType::TvTextInput, HeaderFlags::empty(), 555);
+    let packet = lookaremote_protocol::Packet::new(header, Payload::TvTextInput(msg));
+
+    let encoded = encode_packet(&packet).expect("Encoding TV text succeeds");
+    assert_eq!(encoded.len(), TV_TEXT_TOTAL_SIZE);
+    assert_eq!(encoded.len(), 37);
+
+    let decoded = decode_packet(encoded.as_slice()).expect("Decoding TV text succeeds");
+    assert_eq!(decoded.header.sequence, 555);
+    assert_eq!(decoded.header.msg_type, MessageType::TvTextInput);
+
+    if let Payload::TvTextInput(decoded_msg) = decoded.payload {
+        assert_eq!(decoded_msg.as_str(), "Stranger Things 4K");
+        assert_eq!(decoded_msg.length, 18);
+    } else {
+        panic!("Expected Payload::TvTextInput");
+    }
+}
+
 

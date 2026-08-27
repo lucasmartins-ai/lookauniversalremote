@@ -9,7 +9,7 @@ export const PROTOCOL_VERSION = 0x01;
 export const HEADER_SIZE = 5;
 
 /** Maximum stack/pre-allocated buffer size for any single protocol frame. */
-export const MAX_PACKET_SIZE = 32;
+export const MAX_PACKET_SIZE = 48;
 
 /**
  * Message Type identifiers.
@@ -25,6 +25,9 @@ export const MessageType = {
   HEARTBEAT: 0x08,
   ACK: 0x09,
   HAPTIC_EVENT: 0x0A,
+  SLOT_ASSIGNMENT: 0x0B,
+  TV_COMMAND: 0x0C,
+  TV_TEXT_INPUT: 0x0D,
 } as const;
 
 export type MessageTypeValue = (typeof MessageType)[keyof typeof MessageType];
@@ -74,6 +77,42 @@ export const MessageSize = {
     PAYLOAD: 4,
     TOTAL: 9,
   },
+  SLOT_ASSIGNMENT: {
+    PAYLOAD: 20,
+    TOTAL: 25,
+  },
+  TV_COMMAND: {
+    PAYLOAD: 4,
+    TOTAL: 9,
+  },
+  TV_TEXT_INPUT: {
+    PAYLOAD: 32,
+    TOTAL: 37,
+  },
+} as const;
+
+/**
+ * Player color definitions for Multi-Controller Party Mode.
+ */
+export const PlayerColor = {
+  P1_CYAN: '#00E5FF',
+  P2_MAGENTA: '#FF007F',
+  P3_YELLOW: '#FFE600',
+  P4_GREEN: '#00FF66',
+} as const;
+
+export const PLAYER_COLORS = [
+  PlayerColor.P1_CYAN,
+  PlayerColor.P2_MAGENTA,
+  PlayerColor.P3_YELLOW,
+  PlayerColor.P4_GREEN,
+] as const;
+
+export const PLAYER_RGB565 = {
+  P1_CYAN: 0x073F,
+  P2_MAGENTA: 0xF80F,
+  P3_YELLOW: 0xFFE0,
+  P4_GREEN: 0x07EC,
 } as const;
 
 /**
@@ -84,6 +123,8 @@ export const TargetMode = {
   TRACKPAD: 1,
   KEYBOARD: 2,
   MEDIA_REMOTE: 3,
+  TV_REMOTE: 4,
+  AIR_MOUSE: 5,
 } as const;
 
 export type TargetModeValue = (typeof TargetMode)[keyof typeof TargetMode];
@@ -98,6 +139,74 @@ export const ModeSwitchFlags = {
 } as const;
 
 export type ModeSwitchFlagsValue = (typeof ModeSwitchFlags)[keyof typeof ModeSwitchFlags];
+
+/**
+ * Universal Smart TV Command Codes for MSG_TV_COMMAND (0x0C).
+ */
+export const TvCommand = {
+  POWER: 1,
+  HOME: 2,
+  MENU_SETTINGS: 3,
+  SOURCE_INPUT: 4,
+  VOLUME_UP: 5,
+  VOLUME_DOWN: 6,
+  MUTE: 7,
+  CHANNEL_UP: 8,
+  CHANNEL_DOWN: 9,
+  PREV_CHANNEL: 10,
+  GUIDE_EPG: 11,
+  INFO: 12,
+  DPAD_UP: 13,
+  DPAD_DOWN: 14,
+  DPAD_LEFT: 15,
+  DPAD_RIGHT: 16,
+  OK_ENTER: 17,
+  BACK: 18,
+  EXIT: 19,
+  DIGIT_0: 20,
+  DIGIT_1: 21,
+  DIGIT_2: 22,
+  DIGIT_3: 23,
+  DIGIT_4: 24,
+  DIGIT_5: 25,
+  DIGIT_6: 26,
+  DIGIT_7: 27,
+  DIGIT_8: 28,
+  DIGIT_9: 29,
+  COLOR_RED: 30,
+  COLOR_GREEN: 31,
+  COLOR_YELLOW: 32,
+  COLOR_BLUE: 33,
+  APP_NETFLIX: 34,
+  APP_YOUTUBE: 35,
+  APP_PRIME: 36,
+  APP_DISNEY: 37,
+  APP_SPOTIFY: 38,
+  APP_BROWSER: 39,
+  MEDIA_PLAY_PAUSE: 40,
+  MEDIA_REWIND: 41,
+  MEDIA_FAST_FORWARD: 42,
+  MEDIA_STOP: 43,
+} as const;
+
+export type TvCommandValue = (typeof TvCommand)[keyof typeof TvCommand];
+
+/**
+ * Target device types for smart routing.
+ */
+export const TargetDeviceType = {
+  GENERIC_TV: 0,
+  SAMSUNG_TIZEN: 1,
+  LG_WEBOS: 2,
+  ANDROID_GOOGLE_TV: 3,
+  ROKU_TV: 4,
+  SONY_BRAVIA: 5,
+  APPLE_TV: 6,
+  DESKTOP_PC_MAC: 7,
+  CONSOLE: 8,
+} as const;
+
+export type TargetDeviceTypeValue = (typeof TargetDeviceType)[keyof typeof TargetDeviceType];
 
 /**
  * Standard Gamepad button bitmask flags (16-bit unsigned).
@@ -119,7 +228,19 @@ export const GamepadButtonMask = {
   BTN_SELECT: 1 << 13, // 0x2000
   BTN_GUIDE: 1 << 14,  // 0x4000 (Home / Guide)
   RESERVED: 1 << 15,   // 0x8000
+  SOUTH: 1 << 4,
+  EAST: 1 << 5,
+  WEST: 1 << 6,
+  NORTH: 1 << 7,
+  SHOULDER_L: 1 << 8,
+  SHOULDER_R: 1 << 9,
+  THUMB_L: 1 << 10,
+  THUMB_R: 1 << 11,
+  START: 1 << 12,
+  SELECT: 1 << 13,
 } as const;
+
+export const GamepadButtonBit = GamepadButtonMask;
 
 /**
  * Touchpad mouse buttons bitmask flags (8-bit unsigned).

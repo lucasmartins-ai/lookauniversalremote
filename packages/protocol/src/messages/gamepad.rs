@@ -61,8 +61,10 @@ pub struct GamepadFullMessage {
     pub trigger_l: u8,
     /// Right Trigger (0 to 255).
     pub trigger_r: u8,
-    /// Reserved alignment field (0x0000).
-    pub reserved: u16,
+    /// Player slot index (0 = P1, 1 = P2, 2 = P3, 3 = P4).
+    pub player_index: u8,
+    /// Reserved alignment byte (0x00).
+    pub reserved: u8,
 }
 
 impl GamepadFullMessage {
@@ -89,7 +91,8 @@ impl GamepadFullMessage {
         let stick_ry = i16::from_le_bytes([payload[8], payload[9]]);
         let trigger_l = payload[10];
         let trigger_r = payload[11];
-        let reserved = u16::from_le_bytes([payload[12], payload[13]]);
+        let player_index = payload[12];
+        let reserved = payload[13];
 
         Ok(Self {
             buttons,
@@ -99,6 +102,7 @@ impl GamepadFullMessage {
             stick_ry,
             trigger_l,
             trigger_r,
+            player_index,
             reserved,
         })
     }
@@ -111,7 +115,6 @@ impl GamepadFullMessage {
         let ly = self.stick_ly.to_le_bytes();
         let rx = self.stick_rx.to_le_bytes();
         let ry = self.stick_ry.to_le_bytes();
-        let res = self.reserved.to_le_bytes();
 
         [
             btn[0], btn[1],
@@ -121,7 +124,8 @@ impl GamepadFullMessage {
             ry[0], ry[1],
             self.trigger_l,
             self.trigger_r,
-            res[0], res[1],
+            self.player_index,
+            self.reserved,
         ]
     }
 

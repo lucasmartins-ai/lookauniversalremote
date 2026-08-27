@@ -207,6 +207,7 @@ fn test_input_router_motion_dispatch_to_additive_stick() {
         stick_ry: -5000,
         trigger_l: 0,
         trigger_r: 0,
+        player_index: 0,
         reserved: 0,
     };
     router
