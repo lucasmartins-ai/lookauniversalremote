@@ -3,7 +3,6 @@
  */
 
 import {
-  HEADER_SIZE,
   MAX_PACKET_SIZE,
   MessageType,
   MessageSize,
@@ -12,12 +11,10 @@ import {
 import type {
   GamepadFullPayload,
   HapticEventPayload,
-  Header,
   HeartbeatPayload,
   KeyboardPayload,
   MediaPayload,
   ModeSwitchPayload,
-  MessagePayload,
   MotionPayload,
   Packet,
   SlotAssignmentPayload,

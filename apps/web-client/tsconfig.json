@@ -18,8 +18,10 @@
     "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "@lookaremote/protocol-types": ["../../packages/protocol-types/src/index.ts"],
+      "@lookaremote/protocol-types/*": ["../../packages/protocol-types/src/*"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "../../packages/protocol-types/src"]
 }

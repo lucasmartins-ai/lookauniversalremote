@@ -62,6 +62,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      '@lookaremote/protocol-types': path.resolve(__dirname, '../../packages/protocol-types/src/index.ts'),
     },
   },
   build: {
