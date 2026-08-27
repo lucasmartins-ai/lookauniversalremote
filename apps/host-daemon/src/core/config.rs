@@ -16,7 +16,7 @@ pub const DEFAULT_WATCHDOG_CHECK_INTERVAL_MS: u64 = 20;
 pub const DEFAULT_NONCE_TTL_SECS: u64 = 60;
 
 /// Official PWA Web Client origin.
-pub const DEFAULT_PWA_ORIGIN: &str = "https://remote.lookaberry.com";
+pub const DEFAULT_PWA_ORIGIN: &str = "https://lookauniversalremote.vercel.app";
 
 /// Command line arguments for the host daemon.
 #[derive(Parser, Debug, Clone)]

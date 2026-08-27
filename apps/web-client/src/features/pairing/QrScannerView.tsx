@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { BrowserQRCodeReader } from '@zxing/browser';
-import { Camera, RefreshCw, Zap, ZapOff, AlertCircle } from 'lucide-react';
+import { Camera, RefreshCw, Zap, ZapOff, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { Button } from '../../ui/components/Button';
 import { haptics } from '../../ui/haptics/hapticEngine';
 
@@ -13,6 +13,7 @@ export const QrScannerView: React.FC<QrScannerViewProps> = ({ onScan, onError })
   const videoRef = useRef<HTMLVideoElement>(null);
   const codeReaderRef = useRef<BrowserQRCodeReader | null>(null);
   const controlsRef = useRef<{ stop: () => void } | null>(null);
+  const isScanningRef = useRef(false);
 
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string>('');
@@ -20,6 +21,7 @@ export const QrScannerView: React.FC<QrScannerViewProps> = ({ onScan, onError })
   const [torchOn, setTorchOn] = useState(false);
   const [hasTorch, setHasTorch] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   // Initialize Code Reader
   useEffect(() => {
@@ -65,6 +67,8 @@ export const QrScannerView: React.FC<QrScannerViewProps> = ({ onScan, onError })
     async (deviceId: string) => {
       stopScanning();
       setErrorMsg(null);
+      isScanningRef.current = false;
+      setIsSuccess(false);
 
       if (!videoRef.current || !codeReaderRef.current) return;
 
@@ -73,10 +77,19 @@ export const QrScannerView: React.FC<QrScannerViewProps> = ({ onScan, onError })
           deviceId || undefined,
           videoRef.current,
           (result, error) => {
-            if (result) {
+            if (result && !isScanningRef.current) {
               const text = result.getText();
-              haptics.pairSuccess();
-              onScan(text);
+              if (text && text.trim().length > 0) {
+                isScanningRef.current = true;
+                setIsSuccess(true);
+                haptics.pairSuccess();
+                onScan(text.trim());
+
+                setTimeout(() => {
+                  isScanningRef.current = false;
+                  setIsSuccess(false);
+                }, 3500);
+              }
             }
             if (error && error.name !== 'NotFoundException') {
               // Ignore non-fatal frame scanning errors
@@ -99,7 +112,7 @@ export const QrScannerView: React.FC<QrScannerViewProps> = ({ onScan, onError })
       } catch (err: any) {
         console.error('Error starting video stream:', err);
         setHasPermission(false);
-        setErrorMsg(err.message || 'Camera access failed');
+        setErrorMsg(err.message || 'Falha ao acessar a câmera. Verifique as permissões.');
         onError?.(err);
       }
     },
@@ -110,7 +123,6 @@ export const QrScannerView: React.FC<QrScannerViewProps> = ({ onScan, onError })
     if (selectedDeviceId) {
       startScanning(selectedDeviceId);
     } else {
-      // Default to any available camera
       startScanning('');
     }
     return () => stopScanning();
@@ -198,9 +210,10 @@ export const QrScannerView: React.FC<QrScannerViewProps> = ({ onScan, onError })
             left: 0,
             width: '32px',
             height: '32px',
-            borderTop: '3px solid var(--color-neon-cyan)',
-            borderLeft: '3px solid var(--color-neon-cyan)',
-            filter: 'drop-shadow(0 0 6px var(--color-neon-cyan))',
+            borderTop: isSuccess ? '3px solid var(--color-neon-green)' : '3px solid var(--color-neon-cyan)',
+            borderLeft: isSuccess ? '3px solid var(--color-neon-green)' : '3px solid var(--color-neon-cyan)',
+            filter: isSuccess ? 'drop-shadow(0 0 8px var(--color-neon-green))' : 'drop-shadow(0 0 6px var(--color-neon-cyan))',
+            transition: 'all 0.3s ease',
           }}
         />
         <div
@@ -210,9 +223,10 @@ export const QrScannerView: React.FC<QrScannerViewProps> = ({ onScan, onError })
             right: 0,
             width: '32px',
             height: '32px',
-            borderTop: '3px solid var(--color-neon-cyan)',
-            borderRight: '3px solid var(--color-neon-cyan)',
-            filter: 'drop-shadow(0 0 6px var(--color-neon-cyan))',
+            borderTop: isSuccess ? '3px solid var(--color-neon-green)' : '3px solid var(--color-neon-cyan)',
+            borderRight: isSuccess ? '3px solid var(--color-neon-green)' : '3px solid var(--color-neon-cyan)',
+            filter: isSuccess ? 'drop-shadow(0 0 8px var(--color-neon-green))' : 'drop-shadow(0 0 6px var(--color-neon-cyan))',
+            transition: 'all 0.3s ease',
           }}
         />
         <div
@@ -222,9 +236,10 @@ export const QrScannerView: React.FC<QrScannerViewProps> = ({ onScan, onError })
             left: 0,
             width: '32px',
             height: '32px',
-            borderBottom: '3px solid var(--color-neon-cyan)',
-            borderLeft: '3px solid var(--color-neon-cyan)',
-            filter: 'drop-shadow(0 0 6px var(--color-neon-cyan))',
+            borderBottom: isSuccess ? '3px solid var(--color-neon-green)' : '3px solid var(--color-neon-cyan)',
+            borderLeft: isSuccess ? '3px solid var(--color-neon-green)' : '3px solid var(--color-neon-cyan)',
+            filter: isSuccess ? 'drop-shadow(0 0 8px var(--color-neon-green))' : 'drop-shadow(0 0 6px var(--color-neon-cyan))',
+            transition: 'all 0.3s ease',
           }}
         />
         <div
@@ -234,38 +249,43 @@ export const QrScannerView: React.FC<QrScannerViewProps> = ({ onScan, onError })
             right: 0,
             width: '32px',
             height: '32px',
-            borderBottom: '3px solid var(--color-neon-cyan)',
-            borderRight: '3px solid var(--color-neon-cyan)',
-            filter: 'drop-shadow(0 0 6px var(--color-neon-cyan))',
+            borderBottom: isSuccess ? '3px solid var(--color-neon-green)' : '3px solid var(--color-neon-cyan)',
+            borderRight: isSuccess ? '3px solid var(--color-neon-green)' : '3px solid var(--color-neon-cyan)',
+            filter: isSuccess ? 'drop-shadow(0 0 8px var(--color-neon-green))' : 'drop-shadow(0 0 6px var(--color-neon-cyan))',
+            transition: 'all 0.3s ease',
           }}
         />
 
         {/* Animated Laser Scanline */}
-        <div
-          className="animate-scanline"
-          style={{
-            position: 'absolute',
-            left: '8px',
-            right: '8px',
-            top: 0,
-            height: '2px',
-            backgroundColor: 'var(--color-neon-cyan)',
-            boxShadow: '0 0 12px var(--color-neon-cyan), 0 0 20px var(--color-neon-cyan)',
-          }}
-        />
+        {!isSuccess && (
+          <div
+            className="animate-scanline"
+            style={{
+              position: 'absolute',
+              left: '8px',
+              right: '8px',
+              top: 0,
+              height: '2px',
+              backgroundColor: 'var(--color-neon-cyan)',
+              boxShadow: '0 0 12px var(--color-neon-cyan), 0 0 20px var(--color-neon-cyan)',
+            }}
+          />
+        )}
 
         {/* Center Target Dot */}
         <div
           style={{
-            width: '6px',
-            height: '6px',
+            width: isSuccess ? '16px' : '6px',
+            height: isSuccess ? '16px' : '6px',
             borderRadius: '50%',
-            backgroundColor: 'rgba(0, 229, 255, 0.6)',
+            backgroundColor: isSuccess ? 'var(--color-neon-green)' : 'rgba(0, 229, 255, 0.6)',
+            boxShadow: isSuccess ? '0 0 12px var(--color-neon-green)' : 'none',
+            transition: 'all 0.3s ease',
           }}
         />
       </div>
 
-      {/* Guidance Text */}
+      {/* Guidance Text / Success Banner */}
       <div
         style={{
           position: 'relative',
@@ -274,20 +294,32 @@ export const QrScannerView: React.FC<QrScannerViewProps> = ({ onScan, onError })
           textAlign: 'center',
           padding: '8px 16px',
           borderRadius: '20px',
-          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          backgroundColor: isSuccess ? 'rgba(0, 255, 102, 0.2)' : 'rgba(0, 0, 0, 0.7)',
           backdropFilter: 'blur(8px)',
-          border: '1px solid var(--color-border-subtle)',
+          border: isSuccess ? '1.5px solid var(--color-neon-green)' : '1px solid var(--color-border-subtle)',
+          boxShadow: isSuccess ? '0 0 16px rgba(0, 255, 102, 0.3)' : 'none',
+          transition: 'all 0.3s ease',
         }}
       >
         <p
           style={{
             fontFamily: 'var(--font-mono)',
             fontSize: '0.85rem',
-            color: 'var(--color-neon-cyan)',
+            color: isSuccess ? 'var(--color-neon-green)' : 'var(--color-neon-cyan)',
+            fontWeight: isSuccess ? 800 : 600,
             letterSpacing: '0.05em',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
           }}
         >
-          ALIGN HOST QR CODE IN FRAME
+          {isSuccess ? (
+            <>
+              <CheckCircle2 size={16} /> QR CODE DETECTADO! CONECTANDO...
+            </>
+          ) : (
+            'APONTE PARA O QR CODE DO COMPUTADOR'
+          )}
         </p>
       </div>
 

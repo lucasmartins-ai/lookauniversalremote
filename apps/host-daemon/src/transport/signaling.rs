@@ -172,8 +172,15 @@ pub fn create_signaling_router(state: AppState) -> Router {
         .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
         .allow_headers(Any);
 
-    Router::new()
-        .route("/", get(qr_page_handler))
+    let dist_dir = if std::path::Path::new("dist").exists() {
+        Some("dist")
+    } else if std::path::Path::new("apps/web-client/dist").exists() {
+        Some("apps/web-client/dist")
+    } else {
+        None
+    };
+
+    let base_router = Router::new()
         .route("/health", get(health_handler))
         .route("/qr", get(qr_page_handler))
         .route("/api/pair", post(pair_handler))
@@ -191,9 +198,18 @@ pub fn create_signaling_router(state: AppState) -> Router {
             get(get_tv_target_handler).post(set_tv_target_handler),
         )
         .route("/api/tv-command", post(tv_command_http_handler))
-        .route("/ws/signaling", get(ws_signaling_upgrade))
-        .layer(cors)
-        .with_state(state)
+        .route("/ws/signaling", get(ws_signaling_upgrade));
+
+    let final_router = if let Some(dir) = dist_dir {
+        base_router.fallback_service(
+            tower_http::services::ServeDir::new(dir)
+                .fallback(tower_http::services::ServeFile::new(format!("{dir}/index.html"))),
+        )
+    } else {
+        base_router.route("/", get(qr_page_handler))
+    };
+
+    final_router.layer(cors).with_state(state)
 }
 
 /// Direct TV command payload for REST HTTP execution

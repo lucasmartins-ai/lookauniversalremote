@@ -4,7 +4,7 @@ use qrcode::render::unicode::Dense1x2;
 use qrcode::QrCode;
 
 /// Base URL for the official LookARemote Web Client.
-pub const CANONICAL_PWA_BASE_URL: &str = "https://remote.lookaberry.com/connect";
+pub const CANONICAL_PWA_BASE_URL: &str = "https://lookauniversalremote.vercel.app";
 
 /// QR generation error type.
 #[derive(Debug)]

@@ -3,6 +3,7 @@ import {
   PairingParams,
   PairResponsePayload,
   ClientKeyPair,
+  parsePairingUri,
 } from './pairingCrypto';
 import { PairingManager, PairingState } from './PairingManager';
 
@@ -102,7 +103,7 @@ export function usePairing(options: UsePairingOptions | boolean = true): UsePair
     [manager]
   );
 
-  // Auto-check URL hash (e.g., https://remote.lookaberry.com/connect#h=...&k=...)
+  // Auto-check URL hash (e.g., https://lookauniversalremote.vercel.app/#h=...&k=...)
   useEffect(() => {
     if (!autoCheckUrlHash || typeof window === 'undefined') return;
 
@@ -114,8 +115,18 @@ export function usePairing(options: UsePairingOptions | boolean = true): UsePair
             onSuccessRef.current(sess);
           }
         })
-        .catch((e) => {
+        .catch((e: any) => {
           console.warn('Auto-pairing from URL hash failed:', e);
+          const isHttps = window.location.protocol === 'https:';
+          if (isHttps) {
+            try {
+              const params = parsePairingUri(hash);
+              // If HTTPS blocks local LAN HTTP handshake, redirect to local HTTP origin
+              window.location.href = `http://${params.host}:${params.port}/${hash}`;
+            } catch {
+              // Ignored
+            }
+          }
         });
     }
   }, [autoCheckUrlHash, pairWithRawUri]);

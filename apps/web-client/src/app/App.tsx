@@ -8,6 +8,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { usePairing, PairingSession } from '../features/pairing/usePairing';
+import { parsePairingUri } from '../features/pairing/pairingCrypto';
 import { useWebRtc } from '../features/connection/useWebRtc';
 import { useSettings } from '../features/settings/useSettings';
 import { useSmartContext, InputMode } from '../features/context/useSmartContext';
@@ -99,8 +100,18 @@ export const App: React.FC = () => {
     try {
       const session = await pairWithRawUri(text);
       await handlePairingSuccess(session);
-    } catch (e) {
+    } catch (e: any) {
       console.warn('Scan handling failed:', e);
+      const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
+      if (isHttps && (text.includes('#h=') || text.includes('h='))) {
+        try {
+          const params = parsePairingUri(text);
+          // Redirect to local HTTP host to bypass HTTPS mixed content block
+          window.location.href = `http://${params.host}:${params.port}/#h=${params.host}&p=${params.port}&k=${params.hostPubKey}&n=${params.nonce}&v=${params.version}`;
+        } catch (parseErr) {
+          console.error('Failed to parse scan params for redirect:', parseErr);
+        }
+      }
     }
   };
 
