@@ -23,8 +23,8 @@ impl std::fmt::Display for QrError {
 
 impl std::error::Error for QrError {}
 
-/// Builds canonical pairing URI for the mobile PWA client.
-/// Format: `https://remote.lookaberry.com/connect#h=<HOST_IP>&p=<PORT>&k=<HOST_PUBKEY_HEX>&n=<NONCE_HEX>&v=1`
+/// Builds canonical pairing URI for the mobile PWA client (Cloud Hosted).
+/// Format: `https://lookauniversalremote.vercel.app/#h=<HOST_IP>&p=<PORT>&k=<HOST_PUBKEY_HEX>&n=<NONCE_HEX>&v=1`
 pub fn build_pairing_uri(
     host_ip: &str,
     port: u16,
@@ -35,6 +35,20 @@ pub fn build_pairing_uri(
     format!(
         "{}/#h={}&p={}&k={}&n={}&v=1",
         base, host_ip, port, host_pubkey_hex, nonce_hex
+    )
+}
+
+/// Builds direct local LAN pairing URI served directly by the daemon.
+/// Format: `http://<HOST_IP>:<PORT>/#h=<HOST_IP>&p=<PORT>&k=<HOST_PUBKEY_HEX>&n=<NONCE_HEX>&v=1`
+pub fn build_local_pairing_uri(
+    host_ip: &str,
+    port: u16,
+    host_pubkey_hex: &str,
+    nonce_hex: &str,
+) -> String {
+    format!(
+        "http://{}:{}/#h={}&p={}&k={}&n={}&v=1",
+        host_ip, port, host_ip, port, host_pubkey_hex, nonce_hex
     )
 }
 

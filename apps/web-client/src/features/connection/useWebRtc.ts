@@ -4,6 +4,7 @@ import { ProtocolBridge } from '../../transport/ProtocolBridge';
 import { TransportState } from '../../transport/ITransport';
 import { TelemetryData, INITIAL_TELEMETRY, AppConnectionState } from './ConnectionState';
 import { PairingSession } from '../pairing/usePairing';
+import { HostConnectionManager } from '../../transport/HostConnectionManager';
 
 export interface UseWebRtcResult {
   state: AppConnectionState;
@@ -17,6 +18,8 @@ export interface UseWebRtcResult {
 export function useWebRtc(): UseWebRtcResult {
   const [state, setState] = useState<AppConnectionState>('idle');
   const [telemetry, setTelemetry] = useState<TelemetryData>(INITIAL_TELEMETRY);
+  const [activeBridge, setActiveBridge] = useState<ProtocolBridge | null>(null);
+  const [activeTransport, setActiveTransport] = useState<WebRtcTransport | null>(null);
 
   const transportRef = useRef<WebRtcTransport | null>(null);
   const bridgeRef = useRef<ProtocolBridge | null>(null);
@@ -39,6 +42,8 @@ export function useWebRtc(): UseWebRtcResult {
       transportRef.current = null;
     }
 
+    setActiveBridge(null);
+    setActiveTransport(null);
     setState('disconnected');
     setTelemetry((prev) => ({ ...prev, state: 'disconnected' }));
   }, []);
@@ -46,6 +51,9 @@ export function useWebRtc(): UseWebRtcResult {
   const connect = useCallback(
     async (session: PairingSession) => {
       disconnect();
+
+      // Register active host globally in HostConnectionManager
+      HostConnectionManager.setActiveHost(session.params.host, session.params.port);
 
       setState('connecting');
       setTelemetry((prev) => ({
@@ -64,6 +72,8 @@ export function useWebRtc(): UseWebRtcResult {
       const bridge = new ProtocolBridge(transport);
       transportRef.current = transport;
       bridgeRef.current = bridge;
+      setActiveBridge(bridge);
+      setActiveTransport(transport);
 
       // Bind transport state
       transport.onStateChange((transportState: TransportState) => {
@@ -142,8 +152,8 @@ export function useWebRtc(): UseWebRtcResult {
   return {
     state,
     telemetry,
-    bridge: bridgeRef.current,
-    transport: transportRef.current,
+    bridge: activeBridge || bridgeRef.current,
+    transport: activeTransport || transportRef.current,
     connect,
     disconnect,
   };

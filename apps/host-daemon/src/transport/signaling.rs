@@ -268,6 +268,14 @@ pub async fn api_v1_tv_select_handler(
     let selected = state.tv_discovery.registry().get_selected_device();
 
     if success {
+        if let Some(ref dev) = selected {
+            let _ = state.tv_adapters.connect_device(dev).await;
+            if let Some(ref router) = state.input_router {
+                if let Ok(dispatcher) = router.tv_dispatcher().lock() {
+                    dispatcher.set_tv_ip(dev.ip.clone());
+                }
+            }
+        }
         info!(device_id = %payload.device_id, "Selected active Smart TV device");
         Json(serde_json::json!({
             "status": "ok",
@@ -403,7 +411,14 @@ pub async fn set_tv_target_handler(
         state
             .tv_discovery
             .registry()
-            .set_selected_device(manual_dev.id);
+            .set_selected_device(manual_dev.id.clone());
+
+        let _ = state.tv_adapters.connect_device(&manual_dev).await;
+        if let Some(ref router) = state.input_router {
+            if let Ok(dispatcher) = router.tv_dispatcher().lock() {
+                dispatcher.set_tv_ip(new_ip.to_string());
+            }
+        }
 
         Json(serde_json::json!({ "status": "ok", "tv_ip": new_ip }))
     } else {
@@ -491,7 +506,7 @@ pub async fn qr_page_handler(State(state): State<AppState>) -> Html<String> {
     let nonce_hex = hex::encode(nonce);
     let host_pubkey_hex = state.keypair.public_key_hex();
 
-    let pairing_uri = build_pairing_uri(
+    let pairing_uri = crate::pairing::qr::build_local_pairing_uri(
         &host_ip_str,
         state.config.port,
         &host_pubkey_hex,

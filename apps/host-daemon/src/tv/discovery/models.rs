@@ -39,6 +39,7 @@ pub struct TvDevice {
     /// List of supported capabilities (e.g. ["keys", "text_input", "media", "apps", "power_on"])
     pub capabilities: Vec<String>,
     /// How the device was discovered
+    #[serde(alias = "source")]
     pub discovery_source: DiscoverySource,
     /// Whether device requires pairing handshake before accepting commands
     pub requires_pairing: bool,

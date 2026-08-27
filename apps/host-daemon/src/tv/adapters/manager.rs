@@ -42,6 +42,27 @@ impl TvAdapterManager {
         &self.registry
     }
 
+    /// Get a vendor adapter by protocol ID.
+    pub fn get_adapter(&self, proto: u8) -> Option<Arc<dyn TvAdapter>> {
+        let lock = self.adapters.read().ok()?;
+        lock.get(&proto).cloned()
+    }
+
+    /// Connect target device to the matching vendor adapter.
+    pub async fn connect_device(
+        &self,
+        device: &crate::tv::discovery::models::TvDevice,
+    ) -> Result<(), TvError> {
+        let proto = device.protocol;
+        let adapter = self.get_adapter(proto);
+
+        if let Some(adapter) = adapter {
+            adapter.connect(device).await
+        } else {
+            Ok(())
+        }
+    }
+
     /// Authoritatively dispatch a TV command to the target vendor adapter.
     pub async fn dispatch_command(
         &self,
@@ -50,15 +71,21 @@ impl TvAdapterManager {
         self.commands_routed.fetch_add(1, Ordering::Relaxed);
         let proto = msg.target_device;
 
-        let adapter = {
-            let lock = self
-                .adapters
-                .read()
-                .map_err(|_| TvError::Internal("Lock poisoned".into()))?;
-            lock.get(&proto).cloned()
-        };
+        let adapter = self.get_adapter(proto);
 
         if let Some(adapter) = adapter {
+            // Auto-connect adapter to selected TV device or matching device in registry if needed
+            if let Some(selected) = self.registry.get_selected_device() {
+                let _ = adapter.connect(&selected).await;
+            } else if let Some(dev) = self
+                .registry
+                .list_devices()
+                .into_iter()
+                .find(|d| d.protocol == proto)
+            {
+                let _ = adapter.connect(&dev).await;
+            }
+
             debug!(
                 protocol = proto,
                 command_code = msg.command_code,
@@ -91,15 +118,13 @@ impl TvAdapterManager {
             .map(|d| d.protocol)
             .unwrap_or(lookaremote_protocol::messages::tv_target_devices::GENERIC_TV);
 
-        let adapter = {
-            let lock = self
-                .adapters
-                .read()
-                .map_err(|_| TvError::Internal("Lock poisoned".into()))?;
-            lock.get(&target_proto).cloned()
-        };
+        let adapter = self.get_adapter(target_proto);
 
         if let Some(adapter) = adapter {
+            if let Some(selected) = self.registry.get_selected_device() {
+                let _ = adapter.connect(&selected).await;
+            }
+
             debug!(
                 protocol = target_proto,
                 text = %text,

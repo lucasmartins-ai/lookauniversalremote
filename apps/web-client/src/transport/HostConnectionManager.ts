@@ -27,6 +27,37 @@ export interface HostHealthStatus {
 
 export class HostConnectionManager {
   public static readonly DEFAULT_PORT = 8765;
+  private static activeHost: string | null = null;
+  private static activePort: number = 8765;
+
+  /**
+   * Set currently paired/active host daemon IP and port.
+   */
+  public static setActiveHost(host: string, port = this.DEFAULT_PORT): void {
+    const cleanHost = host.trim().replace(/^https?:\/\//i, '').replace(/\/.*$/, '');
+    if (cleanHost.includes(':')) {
+      const parts = cleanHost.split(':');
+      this.activeHost = parts[0] || '127.0.0.1';
+      this.activePort = parseInt(parts[1] || `${port}`, 10) || port;
+    } else {
+      this.activeHost = cleanHost;
+      this.activePort = port;
+    }
+  }
+
+  /**
+   * Get currently active host daemon address.
+   */
+  public static getActiveHost(): string | null {
+    return this.activeHost;
+  }
+
+  /**
+   * Get currently active host port.
+   */
+  public static getActivePort(): number {
+    return this.activePort;
+  }
 
   /**
    * Determine whether current client runtime is loaded over HTTPS.
@@ -70,8 +101,8 @@ export class HostConnectionManager {
     // IPv4 private ranges: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 169.254.0.0/16
     const ipv4Match = cleanHost.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
     if (ipv4Match) {
-      const oct1 = parseInt(ipv4Match[1], 10);
-      const oct2 = parseInt(ipv4Match[2], 10);
+      const oct1 = parseInt(ipv4Match[1] ?? '0', 10);
+      const oct2 = parseInt(ipv4Match[2] ?? '0', 10);
 
       if (oct1 === 10) return true;
       if (oct1 === 172 && oct2 >= 16 && oct2 <= 31) return true;
@@ -108,10 +139,12 @@ export class HostConnectionManager {
   /**
    * Resolve HTTP base URL for a given host and port.
    */
-  public static getHttpBaseUrl(host: string, port = this.DEFAULT_PORT): string {
-    const cleanHost = host.trim().replace(/^https?:\/\//i, '').replace(/\/.*$/, '');
+  public static getHttpBaseUrl(host?: string, port = this.DEFAULT_PORT): string {
+    const rawTarget = host || this.activeHost || (typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1') || '127.0.0.1';
+    const cleanHost = rawTarget.trim().replace(/^https?:\/\//i, '').replace(/\/.*$/, '');
     const hasPort = cleanHost.includes(':');
-    const hostWithPort = hasPort ? cleanHost : `${cleanHost}:${port}`;
+    const targetPort = port || this.activePort || this.DEFAULT_PORT;
+    const hostWithPort = hasPort ? cleanHost : `${cleanHost}:${targetPort}`;
 
     // Use http:// for local network targets to communicate directly with daemon
     // If on HTTPS and host is localhost, browsers allow http://localhost:PORT
@@ -122,10 +155,12 @@ export class HostConnectionManager {
   /**
    * Resolve WebSocket signaling URL for a given host and port.
    */
-  public static getSignalingWsUrl(host: string, port = this.DEFAULT_PORT, sessionId?: string): string {
-    const cleanHost = host.trim().replace(/^wss?:\/\//i, '').replace(/\/.*$/, '');
+  public static getSignalingWsUrl(host?: string, port = this.DEFAULT_PORT, sessionId?: string): string {
+    const rawTarget = host || this.activeHost || (typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1') || '127.0.0.1';
+    const cleanHost = rawTarget.trim().replace(/^wss?:\/\//i, '').replace(/\/.*$/, '');
     const hasPort = cleanHost.includes(':');
-    const hostWithPort = hasPort ? cleanHost : `${cleanHost}:${port}`;
+    const targetPort = port || this.activePort || this.DEFAULT_PORT;
+    const hostWithPort = hasPort ? cleanHost : `${cleanHost}:${targetPort}`;
 
     // When page is HTTPS and target is external, use wss. For local network daemon, use ws.
     const wsScheme = this.isHttps() && !this.isPrivateIp(cleanHost) ? 'wss:' : 'ws:';
@@ -137,14 +172,14 @@ export class HostConnectionManager {
   /**
    * Resolve Pairing endpoint URL (`/api/pair`).
    */
-  public static getPairingEndpoint(host: string, port = this.DEFAULT_PORT): string {
+  public static getPairingEndpoint(host?: string, port = this.DEFAULT_PORT): string {
     return `${this.getHttpBaseUrl(host, port)}/api/pair`;
   }
 
   /**
    * Resolve Health Check endpoint URL (`/health` or `/api/v1/health`).
    */
-  public static getHealthEndpoint(host: string, port = this.DEFAULT_PORT): string {
+  public static getHealthEndpoint(host?: string, port = this.DEFAULT_PORT): string {
     return `${this.getHttpBaseUrl(host, port)}/health`;
   }
 
@@ -152,9 +187,8 @@ export class HostConnectionManager {
    * Resolve a versioned or legacy API URL with optional host fallback.
    */
   public static getHttpEndpoint(path: string, host?: string, port = this.DEFAULT_PORT): string {
-    const targetHost = host || (typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1') || '127.0.0.1';
     const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-    return `${this.getHttpBaseUrl(targetHost, port)}${normalizedPath}`;
+    return `${this.getHttpBaseUrl(host, port)}${normalizedPath}`;
   }
 
   /**

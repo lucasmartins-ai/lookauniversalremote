@@ -38,12 +38,16 @@ export function useBatteryTelemetry(
 
       // Send telemetry packet if bridge is active
       if (protocolBridge) {
-        protocolBridge.sendSlotAssignment({
-          playerIndex,
-          playerColorRgb565,
-          batteryLevel: level,
-          hostName: '',
-        });
+        try {
+          protocolBridge.sendSlotAssignment({
+            playerIndex,
+            playerColorRgb565,
+            batteryLevel: level,
+            hostName: '',
+          });
+        } catch (e) {
+          // Channel might not be open yet
+        }
       }
     };
 

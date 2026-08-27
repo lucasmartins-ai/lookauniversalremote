@@ -30,6 +30,7 @@ impl SsdpDiscovery {
             "urn:dial-multiscreen-org:service:dial:1",
             "roku:ecp",
             "urn:schemas-upnp-org:device:MediaRenderer:1",
+            "urn:schemas-upnp-org:device:MediaServer:1",
             "ssdp:all",
         ];
 
@@ -99,8 +100,9 @@ impl SsdpDiscovery {
 
         let server_lower = server.to_lowercase();
         let location_lower = location.to_lowercase();
+        let st_lower = st.to_lowercase();
 
-        let (brand, name, protocol, port) = if st.contains("roku:ecp")
+        let (brand, name, protocol, port) = if st_lower.contains("roku:ecp")
             || server_lower.contains("roku")
             || location_lower.contains(":8060")
         {
@@ -110,14 +112,14 @@ impl SsdpDiscovery {
                 ROKU_TV,
                 8060,
             )
-        } else if server_lower.contains("tizen") || server_lower.contains("samsung") {
+        } else if server_lower.contains("tizen") || server_lower.contains("samsung") || location_lower.contains(":8001") {
             (
                 "Samsung".to_string(),
                 "Samsung Smart TV (Tizen)".to_string(),
                 SAMSUNG_TIZEN,
                 8001,
             )
-        } else if server_lower.contains("webos") || server_lower.contains("lg") {
+        } else if server_lower.contains("webos") || server_lower.contains("lg") || location_lower.contains(":3000") || location_lower.contains(":1953") {
             (
                 "LG".to_string(),
                 "LG Smart TV (webOS)".to_string(),
@@ -131,13 +133,23 @@ impl SsdpDiscovery {
                 SONY_BRAVIA,
                 80,
             )
-        } else {
+        } else if st_lower.contains("dial") || st_lower.contains("mediarenderer") || server_lower.contains("android") || server_lower.contains("google") {
+            (
+                "Google".to_string(),
+                "Google TV / Android TV".to_string(),
+                ANDROID_GOOGLE_TV,
+                8008,
+            )
+        } else if server_lower.contains("smarttv") || server_lower.contains("tv") {
             (
                 "Generic".to_string(),
                 format!("Smart TV ({})", ip),
                 GENERIC_TV,
                 80,
             )
+        } else {
+            // Exclude routers, printers, and generic network peripherals that don't match TV signatures
+            return None;
         };
 
         debug!(ip = %ip, brand = %brand, "Parsed SSDP discovery advertisement");

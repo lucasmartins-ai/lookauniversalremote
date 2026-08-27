@@ -62,6 +62,58 @@ impl TvDiscoveryService {
             }
         }
 
+        // 4. Subnet probe fallback if multicast was blocked/isolated on Wi-Fi
+        if self.registry.count() == 0 {
+            let local_prefix = if let Ok(s) = std::net::UdpSocket::bind("0.0.0.0:0") {
+                if s.connect("8.8.8.8:80").is_ok() {
+                    if let Ok(addr) = s.local_addr() {
+                        let ip_str = addr.ip().to_string();
+                        let parts: Vec<&str> = ip_str.split('.').collect();
+                        if parts.len() == 4 {
+                            Some(format!("{}.{}.{}", parts[0], parts[1], parts[2]))
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            } else {
+                None
+            };
+
+            let mut prefixes_to_try = Vec::new();
+            if let Some(ref p) = local_prefix {
+                prefixes_to_try.push(p.clone());
+            }
+            for cp in &["192.168.1", "192.168.0", "192.168.15", "10.0.0"] {
+                if !prefixes_to_try.contains(&cp.to_string()) {
+                    prefixes_to_try.push(cp.to_string());
+                }
+            }
+
+            let common_hosts = [1, 2, 3, 4, 5, 10, 15, 20, 50, 100, 101, 102, 103, 104, 105, 110, 120, 150, 200];
+            let mut join_set = tokio::task::JoinSet::new();
+            for prefix in prefixes_to_try.into_iter().take(2) {
+                for host in common_hosts {
+                    let ip = format!("{}.{}", prefix, host);
+                    let client = self.http_client.clone();
+                    join_set.spawn(async move {
+                        TvProbe::probe_ip(&client, &ip).await
+                    });
+                }
+            }
+
+            while let Some(res) = join_set.join_next().await {
+                if let Ok(Some(dev)) = res {
+                    info!(ip = %dev.ip, brand = %dev.brand, "Discovered Smart TV via subnet probe");
+                    self.registry.upsert_device(dev);
+                }
+            }
+        }
+
         // 4. Prune stale devices (> 15 minutes inactive)
         self.registry.prune_stale(Duration::from_secs(900));
 

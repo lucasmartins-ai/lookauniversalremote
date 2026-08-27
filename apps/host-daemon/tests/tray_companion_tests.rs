@@ -14,7 +14,7 @@ fn test_qr_page_html_rendering() {
     assert!(html.contains("<svg"));
     assert!(html.contains("P1 (Cyan)"));
     assert!(html.contains("P2 (Magenta)"));
-    assert!(html.contains("Active Players: <strong>2/4</strong>"));
+    assert!(html.contains("Jogadores Ativos: <strong>2/4</strong>"));
 }
 
 #[test]

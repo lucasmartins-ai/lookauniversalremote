@@ -9,7 +9,7 @@ use tracing::debug;
 pub struct TvProbe;
 
 impl TvProbe {
-    /// Probe a specific IP address on standard TV ports with tight timeout (200ms).
+    /// Probe a specific IP address on standard TV ports with tight timeout (300ms).
     pub async fn probe_ip(client: &reqwest::Client, ip: &str) -> Option<TvDevice> {
         // 1. Probe Roku ECP (Port 8060)
         let roku_url = format!("http://{}:8060/query/device-info", ip);
@@ -98,7 +98,7 @@ impl TvProbe {
             }
         }
 
-        // 3. Probe Google Cast (Port 8008 /setup/eureka_info)
+        // 3. Probe Google Cast / Android TV (Port 8008 /setup/eureka_info)
         let cast_url = format!(
             "http://{}:8008/setup/eureka_info?params=name,device_info",
             ip
@@ -115,7 +115,7 @@ impl TvProbe {
                         .get("name")
                         .and_then(|v| v.as_str())
                         .map(|s| s.to_string())
-                        .unwrap_or_else(|| "Google TV".to_string());
+                        .unwrap_or_else(|| "Google TV / Android TV".to_string());
                     let id = format!("cast-{}", ip.replace('.', "-"));
 
                     debug!(ip = %ip, name = %name, "Probed Google Cast / Android TV successfully");
@@ -136,6 +136,81 @@ impl TvProbe {
                     return Some(dev);
                 }
             }
+        }
+
+        // 4. Probe LG webOS (Port 3000 / 3001)
+        if let Ok(Ok(_)) = tokio::time::timeout(
+            Duration::from_millis(200),
+            tokio::net::TcpStream::connect(format!("{}:3000", ip)),
+        )
+        .await
+        {
+            let id = format!("lg-webos-{}", ip.replace('.', "-"));
+            debug!(ip = %ip, "Probed LG webOS TV (Port 3000) successfully");
+            let mut dev = TvDevice::new(
+                id,
+                ip.to_string(),
+                format!("LG Smart TV ({})", ip),
+                "LG".to_string(),
+                LG_WEBOS,
+                3000,
+                DiscoverySource::Probe,
+            );
+            dev.requires_pairing = true;
+            dev.capabilities = vec!["keys".to_string(), "text_input".to_string(), "apps".to_string()];
+            return Some(dev);
+        }
+
+        // 5. Probe Sony Bravia (Port 80 /sony/system)
+        let sony_url = format!("http://{}:80/sony/system", ip);
+        if let Ok(res) = client
+            .post(&sony_url)
+            .json(&serde_json::json!({
+                "method": "getSystemInformation",
+                "params": [],
+                "id": 1,
+                "version": "1.0"
+            }))
+            .timeout(Duration::from_millis(300))
+            .send()
+            .await
+        {
+            if res.status().is_success() {
+                let id = format!("sony-{}", ip.replace('.', "-"));
+                let mut dev = TvDevice::new(
+                    id,
+                    ip.to_string(),
+                    format!("Sony Bravia TV ({})", ip),
+                    "Sony".to_string(),
+                    SONY_BRAVIA,
+                    80,
+                    DiscoverySource::Probe,
+                );
+                dev.capabilities = vec!["keys".to_string(), "text_input".to_string()];
+                return Some(dev);
+            }
+        }
+
+        // 6. Probe Android TV ADB Remote (Port 5555)
+        if let Ok(Ok(_)) = tokio::time::timeout(
+            Duration::from_millis(150),
+            tokio::net::TcpStream::connect(format!("{}:5555", ip)),
+        )
+        .await
+        {
+            let id = format!("android-adb-{}", ip.replace('.', "-"));
+            debug!(ip = %ip, "Probed Android TV ADB Port 5555 successfully");
+            let mut dev = TvDevice::new(
+                id,
+                ip.to_string(),
+                format!("Android TV (ADB: {})", ip),
+                "Android TV".to_string(),
+                ANDROID_GOOGLE_TV,
+                5555,
+                DiscoverySource::Probe,
+            );
+            dev.capabilities = vec!["keys".to_string(), "text_input".to_string()];
+            return Some(dev);
         }
 
         None

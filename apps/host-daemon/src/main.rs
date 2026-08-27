@@ -58,8 +58,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let host_pubkey_hex = keypair.public_key_hex();
     let initial_nonce_hex = hex::encode(initial_nonce);
 
-    // 3. Build Canonical Pairing URI
-    let pairing_uri = build_pairing_uri(
+    // 3. Build Direct Local Pairing URI & Cloud PWA URI
+    let pairing_uri = lookaremote_host_daemon::pairing::qr::build_local_pairing_uri(
+        &host_ip.to_string(),
+        config.port,
+        &host_pubkey_hex,
+        &initial_nonce_hex,
+    );
+    let pwa_uri = build_pairing_uri(
         &host_ip.to_string(),
         config.port,
         &host_pubkey_hex,
@@ -75,7 +81,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("  • Public Key:        {}...", &host_pubkey_hex[..16]);
     println!("  • Nonce TTL:         {}s", config.nonce_ttl_secs);
     println!("  • Watchdog Timeout:  {}ms", config.watchdog_timeout_ms);
-    println!("  • Pairing URI:       {}\n", pairing_uri);
+    println!("  • Local Link (LAN):  {}", pairing_uri);
+    println!("  • Cloud PWA Link:    {}\n", pwa_uri);
 
     if !config.no_qr {
         println!("Scan this QR code with your mobile camera / LookARemote PWA:\n");
