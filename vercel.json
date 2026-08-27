@@ -1,6 +1,5 @@
 {
   "version": 2,
-  "public": false,
   "buildCommand": "npm run build --workspace=@lookaremote/protocol-types && npm run build --workspace=@lookaremote/web-client",
   "outputDirectory": "apps/web-client/dist",
   "headers": [
